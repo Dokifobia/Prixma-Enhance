@@ -1,0 +1,572 @@
+import { useState, useEffect, useRef } from "react";
+import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
+import { Code2, Settings2, Zap, Bot, MessageCircle, CheckCircle2, ChevronRight, Star } from "lucide-react";
+import { SiWhatsapp, SiInstagram } from "react-icons/si";
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-[100dvh] w-full bg-[#080c18] text-white overflow-x-hidden">
+      <Navbar />
+      <Hero />
+      <Servicios />
+      <ComoFunciona />
+      <PorQue />
+      <Precios />
+      <Contacto />
+      <Footer />
+    </div>
+  );
+}
+
+function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <motion.nav
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        scrolled ? "bg-[#080c18]/80 backdrop-blur-xl border-b border-[#00c8ff]/10 py-4" : "bg-transparent py-6"
+      }`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="container mx-auto px-6 flex items-center justify-between">
+        <a href="#" className="flex items-center gap-2 group" data-testid="link-home">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:scale-110 transition-transform">
+            <defs>
+              <linearGradient id="p-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00c8ff" />
+                <stop offset="100%" stopColor="#4444ff" />
+              </linearGradient>
+            </defs>
+            <path d="M8 4H20C24.4183 4 28 7.58172 28 12C28 16.4183 24.4183 20 20 20H14V28H8V4Z" fill="url(#p-gradient)" fillOpacity="0.2" stroke="url(#p-gradient)" strokeWidth="2" strokeLinejoin="round"/>
+            <path d="M14 10H18C19.1046 10 20 10.8954 20 12C20 13.1046 19.1046 14 18 14H14V10Z" fill="url(#p-gradient)"/>
+            <circle cx="20" cy="12" r="2" fill="#080c18" />
+          </svg>
+          <span className="font-display font-bold text-xl tracking-wider text-white">PRIXMA</span>
+        </a>
+
+        <div className="hidden md:flex items-center gap-8">
+          <a href="#servicios" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-servicios">Servicios</a>
+          <a href="#como-funciona" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-como-funciona">Cómo funciona</a>
+          <a href="#precios" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-precios">Precios</a>
+          <a href="#contacto" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-contacto">Contacto</a>
+        </div>
+
+        <a 
+          href="https://wa.me/573118070620" 
+          target="_blank" 
+          rel="noreferrer"
+          className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-[#00c8ff]/30 hover:border-[#00c8ff] px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-[0_0_15px_rgba(0,200,255,0.1)] hover:shadow-[0_0_25px_rgba(0,200,255,0.3)]"
+          data-testid="button-nav-cta"
+        >
+          Hablar con un experto
+        </a>
+      </div>
+    </motion.nav>
+  );
+}
+
+function Hero() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    const particles: {x: number, y: number, r: number, a: number, va: number}[] = [];
+    const cols = Math.floor(window.innerWidth / 50);
+    const rows = Math.floor(window.innerHeight / 50);
+
+    for(let i = 0; i < cols; i++) {
+      for(let j = 0; j < rows; j++) {
+         if(Math.random() > 0.4) continue;
+         particles.push({
+           x: i * 50 + (Math.random() * 20 - 10),
+           y: j * 50 + (Math.random() * 20 - 10),
+           r: Math.random() * 1.5 + 0.5,
+           a: Math.random() * Math.PI * 2,
+           va: (Math.random() - 0.5) * 0.02
+         });
+      }
+    }
+
+    let animationFrameId: number;
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.a += p.va;
+        const alpha = (Math.sin(p.a) + 1) / 2 * 0.8 + 0.1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 200, 255, ${alpha})`;
+        ctx.fill();
+      });
+      animationFrameId = requestAnimationFrame(render);
+    };
+    render();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <section className="relative min-h-[100dvh] flex items-center justify-center pt-20 overflow-hidden" id="hero">
+      <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-60" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,200,255,0.05)_0%,rgba(8,12,24,0)_70%)] z-0 pointer-events-none" />
+      
+      <div className="container mx-auto px-6 relative z-10 flex flex-col items-center text-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-8 px-4 py-1.5 rounded-full border border-[#00c8ff]/40 bg-[#00c8ff]/5 shadow-[0_0_15px_rgba(0,200,255,0.2)]"
+        >
+          <span className="text-[#00c8ff] text-sm font-medium flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4" /> ✦ Powered by AI
+          </span>
+        </motion.div>
+
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="font-display font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight mb-6 max-w-5xl bg-clip-text text-transparent bg-gradient-to-br from-[#00c8ff] via-white to-[#4444ff] leading-tight pb-2"
+        >
+          Tu negocio en piloto automático
+        </motion.h1>
+
+        <motion.p 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-lg md:text-xl text-[#8899bb] max-w-2xl mb-12"
+        >
+          Creamos páginas web profesionales y automatizamos tus procesos con inteligencia artificial. Más clientes, menos trabajo manual.
+        </motion.p>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
+        >
+          <a href="#contacto" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#00c8ff] to-[#0090ff] text-white font-semibold text-lg transition-transform hover:scale-105 shadow-[0_0_20px_rgba(0,200,255,0.4)]" data-testid="button-hero-web">
+            Quiero mi página web
+          </a>
+          <a href="#contacto" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/5 border border-[#6644ff]/50 text-white font-semibold text-lg transition-all hover:bg-white/10 hover:border-[#6644ff] shadow-[0_0_15px_rgba(102,68,255,0.2)] hover:shadow-[0_0_25px_rgba(102,68,255,0.4)]" data-testid="button-hero-auto">
+            Automatizar mi negocio
+          </a>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function Servicios() {
+  return (
+    <section className="py-24 relative" id="servicios">
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="text-center mb-16">
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Nuestros Servicios</h2>
+          <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <CardReveal>
+            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#00c8ff]/20 rounded-2xl p-8 transition-all hover:bg-[rgba(255,255,255,0.05)] hover:border-[#00c8ff]/60 hover:shadow-[0_0_30px_rgba(0,200,255,0.15)] relative overflow-hidden flex flex-col">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Code2 size={120} color="#00c8ff" />
+              </div>
+              <div className="w-16 h-16 rounded-xl bg-[#00c8ff]/10 flex items-center justify-center mb-6 border border-[#00c8ff]/30 group-hover:scale-110 transition-transform">
+                <Code2 size={32} className="text-[#00c8ff]" />
+              </div>
+              <h3 className="font-display text-2xl font-bold mb-4">Páginas Web Profesionales</h3>
+              <p className="text-[#8899bb] mb-8 leading-relaxed">
+                Diseñamos tu página web con IA en tiempo récord. Diseño premium, optimizada para vender, con dominio propio.
+              </p>
+              <ul className="space-y-3 mb-10 flex-grow">
+                {["Diseño personalizado", "SEO incluido", "Formulario de contacto", "Adaptada a móviles", "Entrega en 5 días"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm text-white/90">
+                    <CheckCircle2 size={18} className="text-[#00c8ff]" /> {item}
+                  </li>
+                ))}
+              </ul>
+              <a href="#contacto" className="inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-white/5 border border-[#00c8ff]/30 text-white font-medium hover:bg-[#00c8ff]/10 hover:border-[#00c8ff] transition-all" data-testid="button-service-web">
+                Quiero mi web <ChevronRight size={18} />
+              </a>
+            </div>
+          </CardReveal>
+
+          <CardReveal delay={0.2}>
+            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#6644ff]/20 rounded-2xl p-8 transition-all hover:bg-[rgba(255,255,255,0.05)] hover:border-[#6644ff]/60 hover:shadow-[0_0_30px_rgba(102,68,255,0.15)] relative overflow-hidden flex flex-col">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Settings2 size={120} color="#6644ff" />
+              </div>
+              <div className="w-16 h-16 rounded-xl bg-[#6644ff]/10 flex items-center justify-center mb-6 border border-[#6644ff]/30 group-hover:scale-110 transition-transform">
+                <Settings2 size={32} className="text-[#6644ff]" />
+              </div>
+              <h3 className="font-display text-2xl font-bold mb-4">Automatizaciones con IA</h3>
+              <p className="text-[#8899bb] mb-8 leading-relaxed">
+                Automatizamos las tareas repetitivas de tu negocio: respuestas automáticas, agendamiento, seguimiento de clientes y más.
+              </p>
+              <ul className="space-y-3 mb-10 flex-grow">
+                {["Chatbot WhatsApp/Instagram", "Respuestas 24/7", "Agenda y recordatorios", "Reportes automáticos", "Integración de apps"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm text-white/90">
+                    <CheckCircle2 size={18} className="text-[#6644ff]" /> {item}
+                  </li>
+                ))}
+              </ul>
+              <a href="#contacto" className="inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-white/5 border border-[#6644ff]/30 text-white font-medium hover:bg-[#6644ff]/10 hover:border-[#6644ff] transition-all" data-testid="button-service-auto">
+                Automatizar mi negocio <ChevronRight size={18} />
+              </a>
+            </div>
+          </CardReveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ComoFunciona() {
+  const steps = [
+    { title: "Nos contactas", desc: "Cuéntanos qué necesita tu negocio", num: "01" },
+    { title: "Diseñamos la solución", desc: "Creamos tu página o automatización a medida", num: "02" },
+    { title: "Lanzamos y escalas", desc: "Tu negocio trabaja solo mientras tú creces", num: "03" }
+  ];
+
+  return (
+    <section className="py-24 bg-[#0d1225]" id="como-funciona">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Cómo Funciona</h2>
+          <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
+        </div>
+
+        <div className="relative max-w-5xl mx-auto">
+          {/* Connecting line */}
+          <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] opacity-20 -translate-y-1/2"></div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {steps.map((step, i) => (
+              <CardReveal key={i} delay={i * 0.2}>
+                <div className="relative bg-[#080c18] border border-white/10 rounded-2xl p-8 text-center h-full z-10 hover:border-white/30 transition-colors">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-8xl font-display font-black text-white/5 pointer-events-none select-none">
+                    {step.num}
+                  </div>
+                  <div className="w-16 h-16 rounded-full bg-[#0d1225] border-2 border-[#00c8ff] flex items-center justify-center mx-auto mb-6 shadow-[0_0_15px_rgba(0,200,255,0.3)] text-xl font-bold font-display text-[#00c8ff]">
+                    {i + 1}
+                  </div>
+                  <h3 className="font-display text-xl font-bold mb-3">{step.title}</h3>
+                  <p className="text-[#8899bb] text-sm">{step.desc}</p>
+                </div>
+              </CardReveal>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PorQue() {
+  const features = [
+    { icon: <Zap size={32} />, title: "Entrega rápida", desc: "Tu proyecto listo en días, no meses", color: "text-[#00c8ff]" },
+    { icon: <Bot size={32} />, title: "Potenciado con IA", desc: "Tecnología de punta al alcance de tu negocio", color: "text-[#6644ff]" },
+    { icon: <MessageCircle size={32} />, title: "Soporte cercano", desc: "Te acompañamos en todo el proceso, en español", color: "text-white" }
+  ];
+
+  return (
+    <section className="py-24" id="por-que">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">¿Por qué PRIXMA?</h2>
+          <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {features.map((f, i) => (
+            <CardReveal key={i} delay={i * 0.1}>
+              <div className="text-center p-6">
+                <div className={`w-20 h-20 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10 ${f.color}`}>
+                  {f.icon}
+                </div>
+                <h3 className="font-display text-xl font-bold mb-3">{f.title}</h3>
+                <p className="text-[#8899bb]">{f.desc}</p>
+              </div>
+            </CardReveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Precios() {
+  return (
+    <section className="py-24 bg-[#0d1225]" id="precios">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Planes y Precios</h2>
+          <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
+          {/* Plan 1 */}
+          <CardReveal>
+            <div className="bg-[#080c18] border border-white/10 rounded-2xl p-8 hover:border-white/30 transition-colors">
+              <h3 className="font-display text-2xl font-bold mb-2">Web Esencial</h3>
+              <p className="text-[#8899bb] mb-6">Para negocios que inician</p>
+              <div className="mb-8">
+                <span className="text-sm text-[#8899bb]">Desde</span>
+                <div className="text-3xl font-display font-bold text-white mt-1">$800.000 COP</div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                {["Landing page profesional", "Dominio incluido", "Formulario de contacto", "Optimización móvil", "Entrega en 5 días"].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-white/80">
+                    <CheckCircle2 size={18} className="text-[#00c8ff] shrink-0 mt-0.5" /> <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <a href="#contacto" className="block w-full py-3 text-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors font-medium">
+                Empezar
+              </a>
+            </div>
+          </CardReveal>
+
+          {/* Plan 2 - Featured */}
+          <CardReveal delay={0.2}>
+            <div className="relative bg-[#080c18] border-2 border-[#00c8ff] rounded-2xl p-8 shadow-[0_0_30px_rgba(0,200,255,0.15)] transform lg:scale-105 z-10">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#00c8ff] text-[#080c18] text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 uppercase tracking-wide">
+                <Star size={14} fill="currentColor" /> Más popular
+              </div>
+              <h3 className="font-display text-2xl font-bold mb-2 text-[#00c8ff]">Web Pro</h3>
+              <p className="text-[#8899bb] mb-6">Para negocios en crecimiento</p>
+              <div className="mb-8">
+                <span className="text-sm text-[#8899bb]">Desde</span>
+                <div className="text-3xl font-display font-bold text-white mt-1">$1.500.000 COP</div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                {["Todo lo de Web Esencial", "Blog o catálogo de productos", "Chat integrado", "SEO avanzado", "Google Analytics"].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-white/90">
+                    <CheckCircle2 size={18} className="text-[#00c8ff] shrink-0 mt-0.5" /> <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <a href="#contacto" className="block w-full py-3 text-center rounded-xl bg-[#00c8ff] text-[#080c18] hover:bg-[#0090ff] hover:text-white transition-colors font-bold">
+                Empezar
+              </a>
+            </div>
+          </CardReveal>
+
+          {/* Plan 3 */}
+          <CardReveal delay={0.4}>
+            <div className="bg-[#080c18] border border-white/10 rounded-2xl p-8 hover:border-white/30 transition-colors">
+              <h3 className="font-display text-2xl font-bold mb-2">Automatización IA</h3>
+              <p className="text-[#8899bb] mb-6">Procesos en piloto automático</p>
+              <div className="mb-8">
+                <span className="text-sm text-[#8899bb]">Desde</span>
+                <div className="text-3xl font-display font-bold text-white mt-1">$500.000 <span className="text-lg font-normal text-[#8899bb]">COP/mes</span></div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                {["Chatbot WhatsApp/Instagram", "Respuestas 24/7", "Panel de control", "Soporte mensual"].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-white/80">
+                    <CheckCircle2 size={18} className="text-[#6644ff] shrink-0 mt-0.5" /> <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <a href="#contacto" className="block w-full py-3 text-center rounded-xl bg-white/5 border border-[#6644ff]/30 text-white hover:bg-[#6644ff]/10 hover:border-[#6644ff] transition-colors font-medium">
+                Cotizar
+              </a>
+            </div>
+          </CardReveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Contacto() {
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [messageText, setMessageText] = useState("");
+
+  const toggleService = (id: string) => {
+    setSelectedServices(prev => 
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+  };
+
+  const handleWhatsApp = () => {
+    const serviceLabels: Record<string, string> = { web: "Página Web Profesional", auto: "Automatización IA" };
+    const selected = selectedServices.map(s => serviceLabels[s]).join(" y ");
+    if (!selected) { alert("Por favor selecciona al menos un servicio 😊"); return; }
+    const texto = `¡Hola! Estoy interesado en: *${selected}*\n\n${messageText ? 'Sobre mi negocio: ' + messageText : ''}`;
+    const url = `https://wa.me/573118070620?text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
+  };
+
+  return (
+    <section className="py-24 relative overflow-hidden" id="contacto">
+      {/* Decorative glows */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#00c8ff]/10 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#6644ff]/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="text-center mb-12">
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">¿Qué necesita tu negocio?</h2>
+          <p className="text-xl text-[#8899bb]">Cuéntanos en qué podemos ayudarte y te respondemos en menos de 24 horas</p>
+        </div>
+
+        <div className="max-w-3xl mx-auto bg-[#0d1225]/80 backdrop-blur-sm border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl">
+          
+          <div className="mb-8">
+            <h3 className="text-white font-medium mb-4">Selecciona los servicios de interés:</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <button 
+                onClick={() => toggleService('web')}
+                className={`p-6 rounded-2xl border-2 text-left transition-all duration-300 ${
+                  selectedServices.includes('web') 
+                    ? 'border-[#00c8ff] bg-[#00c8ff]/10 scale-[1.02] shadow-[0_0_20px_rgba(0,200,255,0.15)]' 
+                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}
+                data-testid="toggle-service-web"
+              >
+                <div className="text-2xl mb-2">🌐</div>
+                <div className="font-bold text-white mb-1">Página Web Profesional</div>
+                <div className="text-xs text-[#8899bb]">Quiero presencia online profesional</div>
+              </button>
+
+              <button 
+                onClick={() => toggleService('auto')}
+                className={`p-6 rounded-2xl border-2 text-left transition-all duration-300 ${
+                  selectedServices.includes('auto') 
+                    ? 'border-[#6644ff] bg-[#6644ff]/10 scale-[1.02] shadow-[0_0_20px_rgba(102,68,255,0.15)]' 
+                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                }`}
+                data-testid="toggle-service-auto"
+              >
+                <div className="text-2xl mb-2">🤖</div>
+                <div className="font-bold text-white mb-1">Automatización IA</div>
+                <div className="text-xs text-[#8899bb]">Quiero ahorrar tiempo y atender más clientes</div>
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <label className="block text-white font-medium mb-4" htmlFor="message">Cuéntanos sobre tu negocio:</label>
+            <textarea 
+              id="message"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="Ej: Tengo un restaurante y me gustaría una página web para mostrar el menú y un bot que tome reservas..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-[#8899bb]/50 focus:outline-none focus:border-[#00c8ff] focus:ring-1 focus:ring-[#00c8ff] transition-all resize-none min-h-[120px]"
+              data-testid="input-contact-message"
+            />
+          </div>
+
+          <div className="text-center">
+            <button 
+              onClick={handleWhatsApp}
+              className="w-full sm:w-auto px-10 py-5 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-3 mx-auto transition-all transform hover:scale-105 shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', boxShadow: '0 0 20px rgba(37,211,102,0.3)' }}
+              data-testid="button-contact-whatsapp"
+            >
+              <SiWhatsapp size={24} /> <span>Enviar por WhatsApp</span>
+            </button>
+            <p className="mt-6 text-sm text-[#8899bb]">
+              También puedes escribirnos directamente a Instagram: <a href="https://instagram.com/prixma" target="_blank" rel="noreferrer" className="text-white hover:text-[#00c8ff] transition-colors">@prixma</a>
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="bg-[#080c18] border-t border-white/10 py-12 text-center">
+      <div className="container mx-auto px-6">
+        <div className="flex flex-col items-center justify-center mb-8">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4">
+            <defs>
+              <linearGradient id="p-gradient-footer" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00c8ff" />
+                <stop offset="100%" stopColor="#4444ff" />
+              </linearGradient>
+            </defs>
+            <path d="M8 4H20C24.4183 4 28 7.58172 28 12C28 16.4183 24.4183 20 20 20H14V28H8V4Z" fill="url(#p-gradient-footer)" fillOpacity="0.2" stroke="url(#p-gradient-footer)" strokeWidth="2" strokeLinejoin="round"/>
+            <path d="M14 10H18C19.1046 10 20 10.8954 20 12C20 13.1046 19.1046 14 18 14H14V10Z" fill="url(#p-gradient-footer)"/>
+            <circle cx="20" cy="12" r="2" fill="#080c18" />
+          </svg>
+          <span className="font-display font-bold text-2xl tracking-widest text-white mb-2">PRIXMA</span>
+          <p className="text-[#8899bb] tracking-widest text-sm uppercase">Automatiza • Convierte • Escala</p>
+        </div>
+
+        <div className="flex items-center justify-center gap-6 mb-8">
+          <a href="#servicios" className="text-sm text-[#8899bb] hover:text-white transition-colors">Servicios</a>
+          <a href="#como-funciona" className="text-sm text-[#8899bb] hover:text-white transition-colors">Cómo funciona</a>
+          <a href="#precios" className="text-sm text-[#8899bb] hover:text-white transition-colors">Precios</a>
+        </div>
+
+        <div className="flex items-center justify-center gap-6 mb-8">
+          <a href="https://wa.me/573118070620" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#25D366] hover:text-white transition-all">
+            <SiWhatsapp size={20} />
+          </a>
+          <a href="https://instagram.com/prixma" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#E1306C] hover:text-white transition-all">
+            <SiInstagram size={20} />
+          </a>
+        </div>
+
+        <p className="text-xs text-[#8899bb]/50">
+          © {new Date().getFullYear()} PRIXMA. Todos los derechos reservados.
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+function CardReveal({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+      className="h-full"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function SparklesIcon(props: any) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M11.64 5.23a.75.75 0 0 1 1.32 0l1.78 3.6a.75.75 0 0 0 .41.41l3.6 1.78a.75.75 0 0 1 0 1.32l-3.6 1.78a.75.75 0 0 0-.41.41l-1.78 3.6a.75.75 0 0 1-1.32 0l-1.78-3.6a.75.75 0 0 0-.41-.41l-3.6-1.78a.75.75 0 0 1 0-1.32l3.6-1.78a.75.75 0 0 0 .41-.41l1.78-3.6Z" />
+    </svg>
+  );
+}
