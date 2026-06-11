@@ -428,81 +428,259 @@ function PorQue() {
 }
 
 function Precios() {
+  const [tab, setTab] = useState<"web" | "auto">("web");
+
+  const webPlanes = [
+    {
+      nombre: "Esencial",
+      precio: "$800.000 COP",
+      tipo: "pago único",
+      popular: false,
+      items: [
+        "Landing page profesional",
+        "Dominio incluido",
+        "Formulario de contacto",
+        "Optimización móvil",
+        "Entrega en 5 días",
+      ],
+      cta: "Empezar",
+      ctaStyle: "normal" as const,
+    },
+    {
+      nombre: "Pro",
+      precio: "$1.500.000 COP",
+      tipo: "pago único",
+      popular: true,
+      items: [
+        "Landing page profesional",
+        "Dominio incluido",
+        "Formulario de contacto",
+        "Optimización móvil",
+        "Entrega en 5 días",
+        "Blog o catálogo de productos",
+        "Chat integrado",
+        "SEO avanzado",
+        "Google Analytics",
+      ],
+      cta: "Empezar",
+      ctaStyle: "featured" as const,
+    },
+    {
+      nombre: "Full",
+      precio: "$2.800.000 COP",
+      tipo: "pago único",
+      popular: false,
+      items: [
+        "Todo lo del Pro",
+        "Tienda online",
+        "Pasarela de pagos",
+        "Panel de administración",
+        "Soporte 3 meses incluido",
+      ],
+      cta: "Empezar",
+      ctaStyle: "normal" as const,
+    },
+  ];
+
+  const autoPlanes = [
+    {
+      nombre: "Starter",
+      setup: "$500.000",
+      mensual: "$150.000/mes",
+      popular: false,
+      items: [
+        "Bot responde 24/7 por Instagram y Facebook",
+        "Agenda citas automático",
+        "Confirmación instantánea al cliente",
+        "Recordatorio 1 hora antes",
+        "Soporte básico mensual",
+      ],
+      cta: "Cotizar",
+      ctaStyle: "normal" as const,
+    },
+    {
+      nombre: "Pro",
+      setup: "$900.000",
+      mensual: "$280.000/mes",
+      popular: true,
+      items: [
+        "Bot con IA que habla como humano",
+        "WhatsApp + Instagram + Facebook",
+        "Agenda citas automático",
+        "Confirmación y recordatorios automáticos",
+        "Pide reseñas en Google automático",
+        "CRM con historial de clientes",
+        "Soporte mensual",
+      ],
+      cta: "Cotizar",
+      ctaStyle: "featured" as const,
+    },
+    {
+      nombre: "Full",
+      setup: "$1.800.000",
+      mensual: "$500.000/mes",
+      popular: false,
+      items: [
+        "Bot con IA que habla como humano",
+        "WhatsApp + Instagram + Facebook",
+        "Agenda citas automático",
+        "Confirmación y recordatorios automáticos",
+        "Pide reseñas en Google automático",
+        "CRM con historial de clientes",
+        "Campañas de reactivación de clientes",
+        "Reportes semanales de citas agendadas",
+        "Integración con pagos",
+        "Soporte prioritario 7 días",
+      ],
+      cta: "Cotizar",
+      ctaStyle: "normal" as const,
+    },
+  ];
+
+  const accentColor = tab === "web" ? "#00c8ff" : "#6644ff";
+  const accentRgb = tab === "web" ? "0,200,255" : "102,68,255";
+  const checkColor = tab === "web" ? "text-[#00c8ff]" : "text-[#6644ff]";
+
   return (
     <section className="py-24 bg-[#0d1225]" id="precios">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Planes y Precios</h2>
-          <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
+          <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full mb-10"></div>
+
+          {/* Tabs */}
+          <div className="inline-flex items-center bg-[#080c18] border border-white/10 rounded-2xl p-1.5 gap-1">
+            <button
+              onClick={() => setTab("web")}
+              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                tab === "web"
+                  ? "bg-[#00c8ff]/15 text-[#00c8ff] border border-[#00c8ff]/40 shadow-[0_0_16px_rgba(0,200,255,0.2)]"
+                  : "text-[#8899bb] hover:text-white"
+              }`}
+            >
+              🌐 Páginas Web
+            </button>
+            <button
+              onClick={() => setTab("auto")}
+              className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                tab === "auto"
+                  ? "bg-[#6644ff]/15 text-[#6644ff] border border-[#6644ff]/40 shadow-[0_0_16px_rgba(102,68,255,0.2)]"
+                  : "text-[#8899bb] hover:text-white"
+              }`}
+            >
+              🤖 Automatización IA
+            </button>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
-          <CardReveal>
-            <div className="bg-[#080c18] border border-white/10 rounded-2xl p-8 hover:border-white/30 transition-colors">
-              <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Web Esencial</h3>
-              <p className="text-[#8899bb] mb-6">Para negocios que inician</p>
-              <div className="mb-8">
-                <span className="text-sm text-[#8899bb]">Desde</span>
-                <div className="text-3xl font-bold text-white mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>$800.000 COP</div>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {["Landing page profesional", "Dominio incluido", "Formulario de contacto", "Optimización móvil", "Entrega en 5 días"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-white/80">
-                    <CheckCircle2 size={18} className="text-[#00c8ff] shrink-0 mt-0.5" /> <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <a href="#contacto" className="block w-full py-3 text-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors font-medium">
-                Empezar
-              </a>
-            </div>
-          </CardReveal>
+        {/* Web plans */}
+        {tab === "web" && (
+          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
+            {webPlanes.map((plan, i) => (
+              <CardReveal key={plan.nombre} delay={i * 0.15}>
+                <div
+                  className={`relative h-full rounded-2xl p-8 flex flex-col transition-all duration-300 ${
+                    plan.popular
+                      ? "bg-[#080c18] border-2 border-[#00c8ff] shadow-[0_0_30px_rgba(0,200,255,0.15)] lg:scale-105 z-10"
+                      : "bg-[#080c18] border border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#00c8ff] text-[#080c18] text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 uppercase tracking-wide whitespace-nowrap">
+                      <Star size={12} fill="currentColor" /> Más popular
+                    </div>
+                  )}
+                  <h3
+                    className={`text-2xl font-bold mb-1 ${plan.popular ? "text-[#00c8ff]" : "text-white"}`}
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {plan.nombre}
+                  </h3>
+                  <span className="text-xs text-[#8899bb] mb-6 block">{plan.tipo}</span>
+                  <div className="mb-8">
+                    <div className="text-3xl font-bold text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{plan.precio}</div>
+                  </div>
+                  <ul className="space-y-3 mb-8 flex-grow">
+                    {plan.items.map((item, j) => (
+                      <li key={j} className="flex items-start gap-3 text-sm text-white/80">
+                        <CheckCircle2 size={16} className={`${checkColor} shrink-0 mt-0.5`} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="#contacto"
+                    className={`block w-full py-3 text-center rounded-xl font-bold transition-colors ${
+                      plan.popular
+                        ? "bg-[#00c8ff] text-[#080c18] hover:bg-[#0090ff] hover:text-white"
+                        : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {plan.cta}
+                  </a>
+                </div>
+              </CardReveal>
+            ))}
+          </div>
+        )}
 
-          <CardReveal delay={0.2}>
-            <div className="relative bg-[#080c18] border-2 border-[#00c8ff] rounded-2xl p-8 shadow-[0_0_30px_rgba(0,200,255,0.15)] transform lg:scale-105 z-10">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#00c8ff] text-[#080c18] text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 uppercase tracking-wide">
-                <Star size={14} fill="currentColor" /> Más popular
-              </div>
-              <h3 className="text-2xl font-bold mb-2 text-[#00c8ff]" style={{ fontFamily: "'Inter', sans-serif" }}>Web Pro</h3>
-              <p className="text-[#8899bb] mb-6">Para negocios en crecimiento</p>
-              <div className="mb-8">
-                <span className="text-sm text-[#8899bb]">Desde</span>
-                <div className="text-3xl font-bold text-white mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>$1.500.000 COP</div>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {["Todo lo de Web Esencial", "Blog o catálogo de productos", "Chat integrado", "SEO avanzado", "Google Analytics"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-white/90">
-                    <CheckCircle2 size={18} className="text-[#00c8ff] shrink-0 mt-0.5" /> <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <a href="#contacto" className="block w-full py-3 text-center rounded-xl bg-[#00c8ff] text-[#080c18] hover:bg-[#0090ff] hover:text-white transition-colors font-bold">
-                Empezar
-              </a>
-            </div>
-          </CardReveal>
-
-          <CardReveal delay={0.4}>
-            <div className="bg-[#080c18] border border-white/10 rounded-2xl p-8 hover:border-white/30 transition-colors">
-              <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Automatización IA</h3>
-              <p className="text-[#8899bb] mb-6">Procesos en piloto automático</p>
-              <div className="mb-8">
-                <span className="text-sm text-[#8899bb]">Desde</span>
-                <div className="text-3xl font-bold text-white mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>$500.000 <span className="text-lg font-normal text-[#8899bb]">COP/mes</span></div>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {["Chatbot WhatsApp/Instagram", "Respuestas 24/7", "Panel de control", "Soporte mensual"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm text-white/80">
-                    <CheckCircle2 size={18} className="text-[#6644ff] shrink-0 mt-0.5" /> <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <a href="#contacto" className="block w-full py-3 text-center rounded-xl bg-white/5 border border-[#6644ff]/30 text-white hover:bg-[#6644ff]/10 hover:border-[#6644ff] transition-colors font-medium">
-                Cotizar
-              </a>
-            </div>
-          </CardReveal>
-        </div>
+        {/* Auto plans */}
+        {tab === "auto" && (
+          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
+            {autoPlanes.map((plan, i) => (
+              <CardReveal key={plan.nombre} delay={i * 0.15}>
+                <div
+                  className={`relative h-full rounded-2xl p-8 flex flex-col transition-all duration-300 ${
+                    plan.popular
+                      ? "bg-[#080c18] border-2 border-[#6644ff] shadow-[0_0_30px_rgba(102,68,255,0.15)] lg:scale-105 z-10"
+                      : "bg-[#080c18] border border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#6644ff] text-white text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 uppercase tracking-wide whitespace-nowrap">
+                      <Star size={12} fill="currentColor" /> Más popular
+                    </div>
+                  )}
+                  <h3
+                    className={`text-2xl font-bold mb-1 ${plan.popular ? "text-[#a077ff]" : "text-white"}`}
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {plan.nombre}
+                  </h3>
+                  <span className="text-xs text-[#8899bb] mb-5 block">Setup + mensualidad</span>
+                  <div className="mb-8 space-y-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-[#8899bb]">Setup:</span>
+                      <span className="text-2xl font-bold text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{plan.setup}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-[#8899bb]">Mensual:</span>
+                      <span className="text-xl font-semibold text-[#a077ff]">{plan.mensual}</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-8 flex-grow">
+                    {plan.items.map((item, j) => (
+                      <li key={j} className="flex items-start gap-3 text-sm text-white/80">
+                        <CheckCircle2 size={16} className="text-[#6644ff] shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="#contacto"
+                    className={`block w-full py-3 text-center rounded-xl font-bold transition-colors ${
+                      plan.popular
+                        ? "bg-[#6644ff] text-white hover:bg-[#5533ee]"
+                        : "bg-white/5 border border-[#6644ff]/30 text-white hover:bg-[#6644ff]/10 hover:border-[#6644ff]"
+                    }`}
+                  >
+                    {plan.cta}
+                  </a>
+                </div>
+              </CardReveal>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -723,7 +901,7 @@ function Footer() {
     <footer className="bg-[#080c18] border-t border-white/10 py-12 text-center">
       <div className="container mx-auto px-6">
         <div className="flex flex-col items-center justify-center mb-8">
-          <PrixmaWordmark />
+          <span className="font-bold text-2xl tracking-widest text-white" style={{ fontFamily: "'Inter', sans-serif" }}>PRIXMA</span>
         </div>
 
         <div className="flex items-center justify-center gap-6 mb-8">
