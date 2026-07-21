@@ -50,8 +50,14 @@ function AnimatedStepNum({ num }: { num: number }) {
 function StaggeredText({ text, className }: { text: string; className?: string }) {
   const words = text.split(" ");
   return (
-    <motion.h1 
+    <motion.h1
       className={className}
+      style={{
+        background: "linear-gradient(135deg, #00c8ff 0%, #ffffff 50%, #4444ff 100%)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+      }}
       initial="hidden"
       animate="visible"
       variants={{
@@ -59,8 +65,8 @@ function StaggeredText({ text, className }: { text: string; className?: string }
       }}
     >
       {words.map((word, i) => (
-        <motion.span 
-          key={i} 
+        <motion.span
+          key={i}
           className="inline-block mr-[0.25em]"
           variants={{
             hidden: { opacity: 0, y: 30 },
@@ -301,9 +307,9 @@ function Hero() {
           </div>
         </motion.div>
 
-        <StaggeredText 
+        <StaggeredText
           text="Tu negocio en piloto automático"
-          className="font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight mb-6 max-w-5xl bg-clip-text text-transparent bg-gradient-to-br from-[#00c8ff] via-white to-[#4444ff] leading-tight pb-2"
+          className="font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight mb-6 max-w-5xl leading-tight pb-2"
         />
 
         <motion.p
