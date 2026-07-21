@@ -1,7 +1,78 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { Code2, Settings2, Zap, Bot, MessageCircle, CheckCircle2, ChevronRight, Star } from "lucide-react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { Code2, Settings2, Zap, Bot, MessageCircle, CheckCircle2, ChevronRight, Star, Menu, X, Clock } from "lucide-react";
 import { SiWhatsapp, SiInstagram } from "react-icons/si";
+
+function useCountUp(end: number, duration: number = 2000) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  useEffect(() => {
+    if (!isInView) return;
+    let startTime: number | null = null;
+    let animationFrame: number;
+
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeOut * end));
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(step);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [end, duration, isInView]);
+
+  return { count, ref };
+}
+
+function AnimatedStat({ num, suffix = "", label }: { num: number; suffix?: string; label: string }) {
+  const { count, ref } = useCountUp(num, 2000);
+  return (
+    <div ref={ref} className="text-center">
+      <div className="text-5xl font-black text-[#00c8ff] mb-2 font-sans tracking-tight">{count}{suffix}</div>
+      <div className="text-xs text-[#8899bb] font-bold uppercase tracking-widest">{label}</div>
+    </div>
+  );
+}
+
+function AnimatedStepNum({ num }: { num: number }) {
+  const { count, ref } = useCountUp(num, 1500);
+  return <span ref={ref}>{count}</span>;
+}
+
+function StaggeredText({ text, className }: { text: string; className?: string }) {
+  const words = text.split(" ");
+  return (
+    <motion.h1 
+      className={className}
+      initial="hidden"
+      animate="visible"
+      variants={{
+        visible: { transition: { staggerChildren: 0.12 } }
+      }}
+    >
+      {words.map((word, i) => (
+        <motion.span 
+          key={i} 
+          className="inline-block mr-[0.25em]"
+          variants={{
+            hidden: { opacity: 0, y: 30 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+          }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </motion.h1>
+  );
+}
 
 export default function App() {
   return (
@@ -19,21 +90,6 @@ export default function App() {
   );
 }
 
-function PrixmaLogo({ size = 40, className = "" }: { size?: number; className?: string }) {
-  const logoSize = size;
-  const textSize = size <= 32 ? "text-xl" : "text-2xl";
-  return (
-    <div className={`flex flex-col items-center gap-1 ${className}`}>
-      <img
-        src="/logo-prixma.png"
-        alt="PRIXMA logo"
-        style={{ width: logoSize, height: logoSize, objectFit: "contain" }}
-        className="rounded-sm"
-      />
-    </div>
-  );
-}
-
 function PrixmaWordmark({ inline = false }: { inline?: boolean }) {
   if (inline) {
     return (
@@ -44,7 +100,7 @@ function PrixmaWordmark({ inline = false }: { inline?: boolean }) {
           style={{ width: 34, height: 34, objectFit: "contain" }}
           className="rounded-sm"
         />
-        <span className="font-bold text-xl tracking-[0.18em] text-white" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: "0.18em" }}>
+        <span className="font-bold text-xl tracking-[0.18em] text-white" style={{ letterSpacing: "0.18em" }}>
           PRIXMA
         </span>
       </div>
@@ -59,7 +115,7 @@ function PrixmaWordmark({ inline = false }: { inline?: boolean }) {
         className="rounded-md"
       />
       <div className="flex flex-col items-center gap-1">
-        <span className="font-bold text-2xl tracking-[0.22em] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <span className="font-bold text-2xl tracking-[0.22em] text-white">
           PRIXMA
         </span>
         <p className="text-[#8899bb] tracking-widest text-xs uppercase">Automatiza • Convierte • Escala</p>
@@ -70,6 +126,7 @@ function PrixmaWordmark({ inline = false }: { inline?: boolean }) {
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -80,127 +137,179 @@ function Navbar() {
   }, []);
 
   return (
-    <motion.nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-[#080c18]/80 backdrop-blur-xl border-b border-[#00c8ff]/10 py-4"
-          : "bg-transparent py-6"
-      }`}
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <div className="container mx-auto px-6 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-0 group" data-testid="link-home">
-          <PrixmaWordmark inline />
-        </a>
+    <>
+      <motion.nav
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+          scrolled
+            ? "bg-[#080c18]/85 backdrop-blur-xl py-4"
+            : "bg-transparent py-6"
+        }`}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        {scrolled && (
+          <div className="absolute bottom-0 left-0 w-full h-[1px] overflow-hidden">
+            <div className="w-full h-full bg-gradient-to-r from-transparent via-[#00c8ff]/40 to-transparent bg-[length:200%_auto] animate-shimmer" />
+          </div>
+        )}
+        <div className="container mx-auto px-6 flex items-center justify-between relative z-10">
+          <a href="#" className="flex items-center gap-0 group" data-testid="link-home" onClick={() => setMobileOpen(false)}>
+            <PrixmaWordmark inline />
+          </a>
 
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#servicios" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-servicios">Servicios</a>
-          <a href="#como-funciona" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-como-funciona">Cómo funciona</a>
-          <a href="#precios" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-precios">Precios</a>
-          <a href="#contacto" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-contacto">Contacto</a>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#servicios" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-servicios">Servicios</a>
+            <a href="#como-funciona" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-como-funciona">Cómo funciona</a>
+            <a href="#precios" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-precios">Precios</a>
+            <a href="#contacto" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-contacto">Contacto</a>
+          </div>
+
+          <a
+            href="https://wa.me/573118070620"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-[#00c8ff]/30 hover:border-[#00c8ff] px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-[0_0_15px_rgba(0,200,255,0.1)] hover:shadow-[0_0_25px_rgba(0,200,255,0.3)]"
+            data-testid="button-nav-cta"
+          >
+            Hablar con un experto
+          </a>
+
+          <button 
+            className="md:hidden text-white p-2" 
+            onClick={() => setMobileOpen(true)}
+          >
+            <Menu size={24} />
+          </button>
         </div>
+      </motion.nav>
 
-        <a
-          href="https://wa.me/573118070620"
-          target="_blank"
-          rel="noreferrer"
-          className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-[#00c8ff]/30 hover:border-[#00c8ff] px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-[0_0_15px_rgba(0,200,255,0.1)] hover:shadow-[0_0_25px_rgba(0,200,255,0.3)]"
-          data-testid="button-nav-cta"
-        >
-          Hablar con un experto
-        </a>
-      </div>
-    </motion.nav>
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[60] bg-[#080c18]/95 backdrop-blur-2xl flex flex-col p-6 md:hidden"
+          >
+            <div className="flex items-center justify-between mb-12">
+              <PrixmaWordmark inline />
+              <button onClick={() => setMobileOpen(false)} className="text-white p-2">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <motion.div 
+              initial="hidden" animate="visible" exit="hidden"
+              variants={{
+                visible: { transition: { staggerChildren: 0.1 } },
+                hidden: { transition: { staggerChildren: 0.05 } }
+              }}
+              className="flex flex-col gap-6 text-2xl font-medium"
+            >
+              {[
+                { name: 'Servicios', id: 'servicios' },
+                { name: 'Cómo funciona', id: 'como-funciona' },
+                { name: 'Precios', id: 'precios' },
+                { name: 'Contacto', id: 'contacto' }
+              ].map((item) => (
+                <motion.a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  onClick={() => setMobileOpen(false)}
+                  variants={{
+                    hidden: { opacity: 0, x: -20 },
+                    visible: { opacity: 1, x: 0 }
+                  }}
+                  className="text-white hover:text-[#00c8ff] transition-colors border-b border-white/5 pb-4"
+                >
+                  {item.name}
+                </motion.a>
+              ))}
+              
+              <motion.a
+                href="https://wa.me/573118070620"
+                target="_blank"
+                rel="noreferrer"
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 }
+                }}
+                className="mt-8 bg-gradient-to-r from-[#00c8ff] to-[#0090ff] text-white py-4 rounded-xl text-center font-bold shadow-[0_0_20px_rgba(0,200,255,0.3)]"
+              >
+                Hablar con un experto
+              </motion.a>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
 function Hero() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    window.addEventListener("resize", resize);
-    resize();
-
-    const particles: { x: number; y: number; r: number; a: number; va: number }[] = [];
-    const cols = Math.floor(window.innerWidth / 50);
-    const rows = Math.floor(window.innerHeight / 50);
-
-    for (let i = 0; i < cols; i++) {
-      for (let j = 0; j < rows; j++) {
-        if (Math.random() > 0.4) continue;
-        particles.push({
-          x: i * 50 + (Math.random() * 20 - 10),
-          y: j * 50 + (Math.random() * 20 - 10),
-          r: Math.random() * 1.5 + 0.5,
-          a: Math.random() * Math.PI * 2,
-          va: (Math.random() - 0.5) * 0.02,
-        });
-      }
-    }
-
-    let animationFrameId: number;
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        p.a += p.va;
-        const alpha = ((Math.sin(p.a) + 1) / 2) * 0.8 + 0.1;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 200, 255, ${alpha})`;
-        ctx.fill();
-      });
-      animationFrameId = requestAnimationFrame(render);
-    };
-    render();
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
   return (
     <section className="relative min-h-[100dvh] flex items-center justify-center pt-20 overflow-hidden" id="hero">
-      <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-60" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,200,255,0.05)_0%,rgba(8,12,24,0)_70%)] z-0 pointer-events-none" />
+      
+      {/* Hero Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <motion.div 
+          animate={{ 
+            y: [0, -40, 0],
+            x: [0, 30, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-[20%] -left-[10%] w-[60vw] max-w-[800px] aspect-square rounded-full bg-[radial-gradient(circle,rgba(0,200,255,0.12)_0%,transparent_60%)] blur-[80px]"
+        />
+        <motion.div 
+          animate={{ 
+            y: [0, 50, 0],
+            x: [0, -40, 0],
+            scale: [1, 1.15, 1],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute -bottom-[20%] -right-[10%] w-[70vw] max-w-[900px] aspect-square rounded-full bg-[radial-gradient(circle,rgba(102,68,255,0.12)_0%,transparent_60%)] blur-[80px]"
+        />
+        <motion.div 
+          animate={{ 
+            y: [0, 30, 0],
+            scale: [1, 1.05, 1],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute top-[20%] left-[30%] w-[40vw] max-w-[600px] aspect-square rounded-full bg-[radial-gradient(circle,rgba(68,68,255,0.1)_0%,transparent_60%)] blur-[80px]"
+        />
+      </div>
+
+      {/* Noise overlay */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.04]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")" }} />
 
       <div className="container mx-auto px-6 relative z-10 flex flex-col items-center text-center">
+        
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-8 px-4 py-1.5 rounded-full border border-[#00c8ff]/40 bg-[#00c8ff]/5 shadow-[0_0_15px_rgba(0,200,255,0.2)]"
+          className="mb-8 relative inline-flex group rounded-full p-[1px] overflow-hidden"
         >
-          <span className="text-[#00c8ff] text-sm font-medium flex items-center gap-2">
-            <SparklesIcon className="w-4 h-4" /> ✦ Powered by AI
-          </span>
+          <span className="absolute inset-[-1000%] animate-shimmer bg-[linear-gradient(90deg,transparent_0%,rgba(0,200,255,0.8)_50%,transparent_100%)] bg-[length:200%_auto]" />
+          <div className="relative inline-flex h-full w-full items-center justify-center rounded-full bg-[#080c18] px-4 py-1.5 backdrop-blur-xl border border-white/5 shadow-[0_0_20px_rgba(0,200,255,0.15)]">
+            <span className="text-[#00c8ff] text-sm font-medium flex items-center gap-2">
+              <SparklesIcon className="w-4 h-4" /> ✦ Powered by AI
+            </span>
+          </div>
         </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+        <StaggeredText 
+          text="Tu negocio en piloto automático"
           className="font-bold text-5xl md:text-7xl lg:text-8xl tracking-tight mb-6 max-w-5xl bg-clip-text text-transparent bg-gradient-to-br from-[#00c8ff] via-white to-[#4444ff] leading-tight pb-2"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          Tu negocio en piloto automático
-        </motion.h1>
+        />
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
           className="text-lg md:text-xl text-[#8899bb] max-w-2xl mb-12"
         >
           Creamos páginas web profesionales y automatizamos tus procesos con inteligencia artificial. Más clientes, menos trabajo manual.
@@ -209,7 +318,7 @@ function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
           className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
         >
           <a
@@ -227,6 +336,19 @@ function Hero() {
             Automatizar mi negocio
           </a>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+          className="mt-14 flex flex-col md:flex-row items-center gap-4 md:gap-6 text-xs text-[#8899bb] font-medium tracking-wide"
+        >
+          <span>✦ +50 negocios digitalizados</span>
+          <span className="hidden md:block w-px h-4 bg-[#8899bb]/30"></span>
+          <span>✦ 5 días promedio de entrega</span>
+          <span className="hidden md:block w-px h-4 bg-[#8899bb]/30"></span>
+          <span>✦ 100% satisfacción garantizada</span>
+        </motion.div>
       </div>
     </section>
   );
@@ -237,34 +359,40 @@ function Servicios() {
     <section className="py-24 relative" id="servicios">
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Nuestros Servicios</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">Nuestros Servicios</h2>
           <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           <CardReveal>
-            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#00c8ff]/20 rounded-2xl p-8 transition-all hover:bg-[rgba(255,255,255,0.05)] hover:border-[#00c8ff]/60 hover:shadow-[0_0_30px_rgba(0,200,255,0.15)] relative overflow-hidden flex flex-col">
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Code2 size={120} color="#00c8ff" />
+            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#00c8ff]/20 rounded-2xl p-8 transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] hover:border-[#00c8ff]/60 hover:shadow-[0_0_30px_rgba(0,200,255,0.15)] hover:-translate-y-1 relative overflow-hidden flex flex-col">
+              <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent to-[#00c8ff]" />
+              
+              <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 pointer-events-none">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,200,255,0.4)_0%,transparent_60%)] scale-[3]" />
+                  <Code2 size={160} color="#00c8ff" className="opacity-10 group-hover:opacity-20 transition-opacity" />
+                </div>
               </div>
-              <div className="w-16 h-16 rounded-xl bg-[#00c8ff]/10 flex items-center justify-center mb-6 border border-[#00c8ff]/30 group-hover:scale-110 transition-transform">
+
+              <div className="relative z-10 w-16 h-16 rounded-xl bg-[#00c8ff]/10 flex items-center justify-center mb-6 border border-[#00c8ff]/30 group-hover:scale-110 transition-transform">
                 <Code2 size={32} className="text-[#00c8ff]" />
               </div>
-              <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Páginas Web Profesionales</h3>
-              <p className="text-[#8899bb] mb-8 leading-relaxed">
+              <h3 className="relative z-10 text-2xl font-bold mb-4">Páginas Web Profesionales</h3>
+              <p className="relative z-10 text-[#8899bb] mb-8 leading-relaxed">
                 Diseñamos tu página web con IA en tiempo récord. Diseño premium, optimizada para vender, con dominio propio.
               </p>
-              <ul className="space-y-3 mb-10 flex-grow">
+              <ul className="relative z-10 space-y-3 mb-10 flex-grow">
                 {["Diseño personalizado", "SEO incluido", "Formulario de contacto", "Adaptada a móviles", "Entrega en 5 días"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-white/90">
                     <CheckCircle2 size={18} className="text-[#00c8ff]" /> {item}
                   </li>
                 ))}
               </ul>
-              {/* Mejora 1: botón con borde cyan brillante, texto cyan y glow hover */}
+              
               <a
                 href="#contacto"
-                className="inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
+                className="relative z-10 inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
                 data-testid="button-service-web"
               >
                 Quiero mi web <ChevronRight size={18} />
@@ -273,28 +401,34 @@ function Servicios() {
           </CardReveal>
 
           <CardReveal delay={0.2}>
-            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#6644ff]/20 rounded-2xl p-8 transition-all hover:bg-[rgba(255,255,255,0.05)] hover:border-[#6644ff]/60 hover:shadow-[0_0_30px_rgba(102,68,255,0.15)] relative overflow-hidden flex flex-col">
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Settings2 size={120} color="#6644ff" />
+            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#6644ff]/20 rounded-2xl p-8 transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] hover:border-[#6644ff]/60 hover:shadow-[0_0_30px_rgba(102,68,255,0.15)] hover:-translate-y-1 relative overflow-hidden flex flex-col">
+              <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent to-[#6644ff]" />
+
+              <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 pointer-events-none">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(102,68,255,0.4)_0%,transparent_60%)] scale-[3]" />
+                  <Settings2 size={160} color="#6644ff" className="opacity-10 group-hover:opacity-20 transition-opacity" />
+                </div>
               </div>
-              <div className="w-16 h-16 rounded-xl bg-[#6644ff]/10 flex items-center justify-center mb-6 border border-[#6644ff]/30 group-hover:scale-110 transition-transform">
+
+              <div className="relative z-10 w-16 h-16 rounded-xl bg-[#6644ff]/10 flex items-center justify-center mb-6 border border-[#6644ff]/30 group-hover:scale-110 transition-transform">
                 <Settings2 size={32} className="text-[#6644ff]" />
               </div>
-              <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Automatizaciones con IA</h3>
-              <p className="text-[#8899bb] mb-8 leading-relaxed">
+              <h3 className="relative z-10 text-2xl font-bold mb-4">Automatizaciones con IA</h3>
+              <p className="relative z-10 text-[#8899bb] mb-8 leading-relaxed">
                 Automatizamos las tareas repetitivas de tu negocio: respuestas automáticas, agendamiento, seguimiento de clientes y más.
               </p>
-              <ul className="space-y-3 mb-10 flex-grow">
+              <ul className="relative z-10 space-y-3 mb-10 flex-grow">
                 {["Chatbot WhatsApp/Instagram", "Respuestas 24/7", "Agenda y recordatorios", "Reportes automáticos", "Integración de apps"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-white/90">
                     <CheckCircle2 size={18} className="text-[#00c8ff]" /> {item}
                   </li>
                 ))}
               </ul>
-              {/* Mejora 1: botón con borde cyan brillante, texto cyan y glow hover */}
+              
               <a
                 href="#contacto"
-                className="inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
+                className="relative z-10 inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
                 data-testid="button-service-auto"
               >
                 Automatizar mi negocio <ChevronRight size={18} />
@@ -321,21 +455,30 @@ function ComoFunciona() {
     <section className="py-24 bg-[#0d1225]" id="como-funciona">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Cómo Funciona</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">Cómo Funciona</h2>
           <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
         </div>
 
         <div className="relative max-w-5xl mx-auto">
-          {/* Mejora 3: línea animada con gradiente cyan a púrpura */}
+          {/* Desktop horizontal line */}
           <div ref={lineRef} className="hidden md:block absolute top-[52px] left-[16.66%] right-[16.66%] h-[3px] overflow-hidden rounded-full z-0">
             <motion.div
               className="h-full w-full bg-gradient-to-r from-[#00c8ff] via-[#6644ff] to-[#9933ff]"
               initial={{ scaleX: 0, transformOrigin: "left" }}
               animate={lineInView ? { scaleX: 1, transformOrigin: "left" } : { scaleX: 0, transformOrigin: "left" }}
               transition={{ duration: 1.2, ease: "easeInOut", delay: 0.3 }}
-              style={{
-                boxShadow: "0 0 12px rgba(0, 200, 255, 0.6), 0 0 30px rgba(102, 68, 255, 0.4)",
-              }}
+              style={{ boxShadow: "0 0 12px rgba(0, 200, 255, 0.6), 0 0 30px rgba(102, 68, 255, 0.4)" }}
+            />
+          </div>
+
+          {/* Mobile vertical line */}
+          <div className="md:hidden absolute top-[10%] bottom-[10%] left-1/2 -translate-x-1/2 w-[3px] overflow-hidden rounded-full z-0">
+            <motion.div
+              className="w-full h-full bg-gradient-to-b from-[#00c8ff] via-[#6644ff] to-[#9933ff]"
+              initial={{ scaleY: 0, transformOrigin: "top" }}
+              animate={lineInView ? { scaleY: 1, transformOrigin: "top" } : { scaleY: 0, transformOrigin: "top" }}
+              transition={{ duration: 1.2, ease: "easeInOut", delay: 0.3 }}
+              style={{ boxShadow: "0 0 12px rgba(0, 200, 255, 0.6)" }}
             />
           </div>
 
@@ -343,18 +486,30 @@ function ComoFunciona() {
             {steps.map((step, i) => (
               <CardReveal key={i} delay={i * 0.2}>
                 <div className="relative bg-[#080c18] border border-white/10 rounded-2xl p-8 text-center h-full z-10 hover:border-white/30 transition-colors">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-8xl font-black text-white/5 pointer-events-none select-none" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-8xl font-black text-white/5 pointer-events-none select-none font-sans">
                     {step.num}
                   </div>
-                  <div className="w-16 h-16 rounded-full bg-[#0d1225] border-2 border-[#00c8ff] flex items-center justify-center mx-auto mb-6 shadow-[0_0_15px_rgba(0,200,255,0.3)] text-xl font-bold text-[#00c8ff]" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    {i + 1}
+                  <div className="w-16 h-16 rounded-full bg-[#0d1225] border-2 border-[#00c8ff] flex items-center justify-center mx-auto mb-6 shadow-[0_0_15px_rgba(0,200,255,0.3)] text-xl font-bold text-[#00c8ff] font-sans">
+                    <AnimatedStepNum num={i + 1} />
                   </div>
-                  <h3 className="text-xl font-bold mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>{step.title}</h3>
+                  <h3 className="text-xl font-bold mb-3">{step.title}</h3>
                   <p className="text-[#8899bb] text-sm">{step.desc}</p>
                 </div>
               </CardReveal>
             ))}
           </div>
+
+          <motion.div 
+            className="text-center mt-16 relative z-10"
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.8 }}
+          >
+            <a href="#contacto" className="inline-flex items-center gap-2 text-[#8899bb] hover:text-[#00c8ff] transition-colors font-medium">
+              ¿Tienes dudas? <span className="text-[#00c8ff] flex items-center">Habla con nosotros <ChevronRight size={16} /></span>
+            </a>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -396,15 +551,20 @@ function PorQue() {
     <section className="py-24" id="por-que">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>¿Por qué PRIXMA?</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">¿Por qué PRIXMA?</h2>
           <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-20">
+          <AnimatedStat num={50} suffix="+" label="negocios servidos" />
+          <AnimatedStat num={5} suffix=" días" label="tiempo de entrega promedio" />
+          <AnimatedStat num={24} suffix="/7" label="soporte automatizado" />
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {features.map((f, i) => (
             <CardReveal key={i} delay={i * 0.1}>
               <div className="text-center p-8 group">
-                {/* Mejora 2: íconos más grandes (w-24 h-24) con colores vibrantes y fondo con glow */}
                 <div
                   className="w-24 h-24 mx-auto rounded-2xl flex items-center justify-center mb-6 transition-all duration-300 group-hover:scale-110"
                   style={{
@@ -416,7 +576,7 @@ function PorQue() {
                 >
                   {f.icon}
                 </div>
-                <h3 className="text-xl font-bold mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>{f.title}</h3>
+                <h3 className="text-xl font-bold mb-3">{f.title}</h3>
                 <p className="text-[#8899bb]">{f.desc}</p>
               </div>
             </CardReveal>
@@ -537,18 +697,15 @@ function Precios() {
     },
   ];
 
-  const accentColor = tab === "web" ? "#00c8ff" : "#6644ff";
-  const accentRgb = tab === "web" ? "0,200,255" : "102,68,255";
   const checkColor = tab === "web" ? "text-[#00c8ff]" : "text-[#6644ff]";
 
   return (
     <section className="py-24 bg-[#0d1225]" id="precios">
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Planes y Precios</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">Planes y Precios</h2>
           <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full mb-10"></div>
 
-          {/* Tabs */}
           <div className="inline-flex items-center bg-[#080c18] border border-white/10 rounded-2xl p-1.5 gap-1">
             <button
               onClick={() => setTab("web")}
@@ -573,44 +730,52 @@ function Precios() {
           </div>
         </div>
 
-        {/* Web plans */}
         {tab === "web" && (
           <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
             {webPlanes.map((plan, i) => (
               <CardReveal key={plan.nombre} delay={i * 0.15}>
                 <div
-                  className={`relative h-full rounded-2xl p-8 flex flex-col transition-all duration-300 ${
+                  className={`relative h-full rounded-2xl p-8 flex flex-col transition-all duration-300 hover:-translate-y-1 overflow-hidden ${
                     plan.popular
-                      ? "bg-[#080c18] border-2 border-[#00c8ff] shadow-[0_0_30px_rgba(0,200,255,0.15)] lg:scale-105 z-10"
+                      ? "bg-gradient-to-b from-[rgba(0,200,255,0.05)] to-[#080c18] border-2 border-[#00c8ff] shadow-[0_0_30px_rgba(0,200,255,0.15)] lg:scale-105 z-10"
                       : "bg-[#080c18] border border-white/10 hover:border-white/30"
                   }`}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#00c8ff] text-[#080c18] text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 uppercase tracking-wide whitespace-nowrap">
-                      <Star size={12} fill="currentColor" /> Más popular
+                    <div className="absolute top-0 right-0 overflow-hidden w-[100px] h-[100px] rounded-tr-2xl z-20 pointer-events-none">
+                      <div className="absolute top-5 -right-8 bg-gradient-to-r from-[#00c8ff] to-[#0090ff] text-[#080c18] text-[10px] font-extrabold py-1.5 w-36 text-center rotate-45 shadow-lg flex items-center justify-center gap-1 uppercase tracking-wider">
+                        <Star size={10} fill="currentColor" /> MÁS POPULAR
+                      </div>
                     </div>
                   )}
-                  <h3
-                    className={`text-2xl font-bold mb-1 ${plan.popular ? "text-[#00c8ff]" : "text-white"}`}
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
+                  <h3 className={`relative z-10 text-2xl font-bold mb-1 ${plan.popular ? "text-[#00c8ff]" : "text-white"}`}>
                     {plan.nombre}
                   </h3>
-                  <span className="text-xs text-[#8899bb] mb-6 block">{plan.tipo}</span>
-                  <div className="mb-8">
-                    <div className="text-3xl font-bold text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{plan.precio}</div>
+                  <span className="relative z-10 text-xs text-[#8899bb] mb-6 block">{plan.tipo}</span>
+                  <div className="relative z-10 mb-8">
+                    <div className="text-3xl font-bold text-white">{plan.precio}</div>
                   </div>
-                  <ul className="space-y-3 mb-8 flex-grow">
+                  <motion.ul 
+                    className="relative z-10 space-y-3 mb-8 flex-grow"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-50px" }}
+                    variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                  >
                     {plan.items.map((item, j) => (
-                      <li key={j} className="flex items-start gap-3 text-sm text-white/80">
+                      <motion.li 
+                        key={j} 
+                        variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}
+                        className="flex items-start gap-3 text-sm text-white/80"
+                      >
                         <CheckCircle2 size={16} className={`${checkColor} shrink-0 mt-0.5`} />
                         <span>{item}</span>
-                      </li>
+                      </motion.li>
                     ))}
-                  </ul>
+                  </motion.ul>
                   <a
                     href="#contacto"
-                    className={`block w-full py-3 text-center rounded-xl font-bold transition-colors ${
+                    className={`relative z-10 block w-full py-3 text-center rounded-xl font-bold transition-colors ${
                       plan.popular
                         ? "bg-[#00c8ff] text-[#080c18] hover:bg-[#0090ff] hover:text-white"
                         : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
@@ -624,51 +789,59 @@ function Precios() {
           </div>
         )}
 
-        {/* Auto plans */}
         {tab === "auto" && (
           <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
             {autoPlanes.map((plan, i) => (
               <CardReveal key={plan.nombre} delay={i * 0.15}>
                 <div
-                  className={`relative h-full rounded-2xl p-8 flex flex-col transition-all duration-300 ${
+                  className={`relative h-full rounded-2xl p-8 flex flex-col transition-all duration-300 hover:-translate-y-1 overflow-hidden ${
                     plan.popular
-                      ? "bg-[#080c18] border-2 border-[#6644ff] shadow-[0_0_30px_rgba(102,68,255,0.15)] lg:scale-105 z-10"
+                      ? "bg-gradient-to-b from-[rgba(102,68,255,0.05)] to-[#080c18] border-2 border-[#6644ff] shadow-[0_0_30px_rgba(102,68,255,0.15)] lg:scale-105 z-10"
                       : "bg-[#080c18] border border-white/10 hover:border-white/30"
                   }`}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#6644ff] text-white text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 uppercase tracking-wide whitespace-nowrap">
-                      <Star size={12} fill="currentColor" /> Más popular
+                    <div className="absolute top-0 right-0 overflow-hidden w-[100px] h-[100px] rounded-tr-2xl z-20 pointer-events-none">
+                      <div className="absolute top-5 -right-8 bg-gradient-to-r from-[#6644ff] to-[#5533ee] text-white text-[10px] font-extrabold py-1.5 w-36 text-center rotate-45 shadow-lg flex items-center justify-center gap-1 uppercase tracking-wider">
+                        <Star size={10} fill="currentColor" /> MÁS POPULAR
+                      </div>
                     </div>
                   )}
-                  <h3
-                    className={`text-2xl font-bold mb-1 ${plan.popular ? "text-[#a077ff]" : "text-white"}`}
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
+                  <h3 className={`relative z-10 text-2xl font-bold mb-1 ${plan.popular ? "text-[#a077ff]" : "text-white"}`}>
                     {plan.nombre}
                   </h3>
-                  <span className="text-xs text-[#8899bb] mb-5 block">Setup + mensualidad</span>
-                  <div className="mb-8 space-y-1">
+                  <span className="relative z-10 text-xs text-[#8899bb] mb-5 block">Setup + mensualidad</span>
+                  <div className="relative z-10 mb-8 space-y-1">
                     <div className="flex items-baseline gap-2">
                       <span className="text-xs text-[#8899bb]">Setup:</span>
-                      <span className="text-2xl font-bold text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{plan.setup}</span>
+                      <span className="text-2xl font-bold text-white">{plan.setup}</span>
                     </div>
                     <div className="flex items-baseline gap-2">
                       <span className="text-xs text-[#8899bb]">Mensual:</span>
                       <span className="text-xl font-semibold text-[#a077ff]">{plan.mensual}</span>
                     </div>
                   </div>
-                  <ul className="space-y-3 mb-8 flex-grow">
+                  <motion.ul 
+                    className="relative z-10 space-y-3 mb-8 flex-grow"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: "-50px" }}
+                    variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                  >
                     {plan.items.map((item, j) => (
-                      <li key={j} className="flex items-start gap-3 text-sm text-white/80">
-                        <CheckCircle2 size={16} className="text-[#6644ff] shrink-0 mt-0.5" />
+                      <motion.li 
+                        key={j} 
+                        variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }}
+                        className="flex items-start gap-3 text-sm text-white/80"
+                      >
+                        <CheckCircle2 size={16} className={`${checkColor} shrink-0 mt-0.5`} />
                         <span>{item}</span>
-                      </li>
+                      </motion.li>
                     ))}
-                  </ul>
+                  </motion.ul>
                   <a
                     href="#contacto"
-                    className={`block w-full py-3 text-center rounded-xl font-bold transition-colors ${
+                    className={`relative z-10 block w-full py-3 text-center rounded-xl font-bold transition-colors ${
                       plan.popular
                         ? "bg-[#6644ff] text-white hover:bg-[#5533ee]"
                         : "bg-white/5 border border-[#6644ff]/30 text-white hover:bg-[#6644ff]/10 hover:border-[#6644ff]"
@@ -686,7 +859,6 @@ function Precios() {
   );
 }
 
-/* Mejora 4: Sección de Testimonios */
 function Testimonios() {
   const testimonios = [
     {
@@ -728,7 +900,7 @@ function Testimonios() {
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Lo que dicen nuestros clientes</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">Lo que dicen nuestros clientes</h2>
           <div className="h-1 w-24 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] mx-auto rounded-full"></div>
         </div>
 
@@ -736,10 +908,8 @@ function Testimonios() {
           {testimonios.map((t, i) => (
             <CardReveal key={i} delay={i * 0.15}>
               <div
-                className="h-full bg-[rgba(255,255,255,0.03)] border border-white/10 rounded-2xl p-8 flex flex-col gap-5 hover:border-white/20 transition-all duration-300"
-                style={{
-                  boxShadow: `0 0 0 0 transparent`,
-                }}
+                className="relative h-full bg-[rgba(255,255,255,0.02)] border border-white/10 rounded-2xl p-8 flex flex-col gap-5 transition-all duration-300 overflow-hidden group hover:border-white/20"
+                style={{ boxShadow: `0 0 0 0 transparent` }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 25px ${t.glow}`;
                 }}
@@ -747,20 +917,32 @@ function Testimonios() {
                   (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 0 0 transparent`;
                 }}
               >
-                {/* Estrellas */}
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, si) => (
-                    <Star key={si} size={16} fill={t.color} color={t.color} />
-                  ))}
+                <div 
+                  className="absolute -top-10 -left-2 text-[10rem] font-serif leading-none select-none transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-105 pointer-events-none" 
+                  style={{ color: t.color, opacity: 0.15 }}
+                >
+                  "
                 </div>
 
-                {/* Comentario */}
-                <p className="text-white/80 text-sm leading-relaxed flex-grow">
+                <motion.div 
+                  className="flex gap-1 relative z-10 mt-6"
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-50px" }}
+                  variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                >
+                  {[...Array(5)].map((_, si) => (
+                    <motion.div key={si} variants={{ hidden: { opacity: 0, scale: 0 }, visible: { opacity: 1, scale: 1 } }}>
+                      <Star size={16} fill={t.color} color={t.color} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                <p className="text-white/90 text-base leading-relaxed flex-grow italic relative z-10 mt-2">
                   "{t.comentario}"
                 </p>
 
-                {/* Avatar + info */}
-                <div className="flex items-center gap-4 pt-4 border-t border-white/10">
+                <div className="flex items-center gap-4 pt-4 border-t border-white/10 relative z-10">
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
                     style={{
@@ -790,6 +972,7 @@ function Testimonios() {
 function Contacto() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [messageText, setMessageText] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
 
   const toggleService = (id: string) => {
     setSelectedServices((prev) =>
@@ -819,11 +1002,17 @@ function Contacto() {
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>¿Qué necesita tu negocio?</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">¿Qué necesita tu negocio?</h2>
           <p className="text-xl text-[#8899bb]">Cuéntanos en qué podemos ayudarte y te respondemos en menos de 24 horas</p>
         </div>
 
-        <div className="max-w-3xl mx-auto bg-[#0d1225]/80 backdrop-blur-sm border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl">
+        <div className="flex justify-center mb-8 relative z-10">
+          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-[#00c8ff]/10 to-transparent border border-[#00c8ff]/20 text-[#00c8ff] text-sm font-medium shadow-[0_0_15px_rgba(0,200,255,0.1)]">
+            <Clock size={16} /> Respondemos en menos de 2 horas
+          </div>
+        </div>
+
+        <div className="max-w-3xl mx-auto bg-[#0d1225]/80 backdrop-blur-sm border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl relative z-10">
           <div className="mb-8">
             <h3 className="text-white font-medium mb-4">Selecciona los servicios de interés:</h3>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -858,13 +1047,15 @@ function Contacto() {
           </div>
 
           <div className="mb-8">
-            <label className="block text-white font-medium mb-4" htmlFor="message">
+            <label className={`block font-medium mb-4 transition-colors duration-300 ${isFocused ? 'text-[#00c8ff]' : 'text-white'}`} htmlFor="message">
               Cuéntanos sobre tu negocio:
             </label>
             <textarea
               id="message"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
               placeholder="Ej: Tengo un restaurante y me gustaría una página web para mostrar el menú y un bot que tome reservas..."
               className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-[#8899bb]/50 focus:outline-none focus:border-[#00c8ff] focus:ring-1 focus:ring-[#00c8ff] transition-all resize-none min-h-[120px]"
               data-testid="input-contact-message"
@@ -898,40 +1089,48 @@ function Contacto() {
 
 function Footer() {
   return (
-    <footer className="bg-[#080c18] border-t border-white/10 py-12 text-center">
+    <footer className="bg-[#080c18] pt-16 pb-8 border-t border-white/5 overflow-hidden">
       <div className="container mx-auto px-6">
-        <div className="flex flex-col items-center justify-center mb-8">
-          <span className="font-bold text-2xl tracking-widest text-white" style={{ fontFamily: "'Inter', sans-serif" }}>PRIXMA</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-center text-center md:text-left mb-16 relative z-10">
+          
+          <div className="flex flex-col items-center md:items-start">
+            <span className="font-bold text-3xl tracking-widest text-white mb-2">PRIXMA</span>
+            <span className="text-[#8899bb] text-sm tracking-wide">Automatiza • Convierte • Escala</span>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+            <a href="#servicios" className="text-sm font-medium text-[#8899bb] hover:text-white transition-colors">Servicios</a>
+            <a href="#como-funciona" className="text-sm font-medium text-[#8899bb] hover:text-white transition-colors">Cómo funciona</a>
+            <a href="#precios" className="text-sm font-medium text-[#8899bb] hover:text-white transition-colors">Precios</a>
+          </div>
+
+          <div className="flex items-center justify-center md:justify-end gap-4">
+            <a
+              href="https://wa.me/573118070620"
+              target="_blank"
+              rel="noreferrer"
+              className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#25D366] hover:text-white transition-all hover:scale-110"
+            >
+              <SiWhatsapp size={20} />
+            </a>
+            <a
+              href="https://instagram.com/prixma"
+              target="_blank"
+              rel="noreferrer"
+              className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#E1306C] hover:text-white transition-all hover:scale-110"
+            >
+              <SiInstagram size={20} />
+            </a>
+          </div>
         </div>
 
-        <div className="flex items-center justify-center gap-6 mb-8">
-          <a href="#servicios" className="text-sm text-[#8899bb] hover:text-white transition-colors">Servicios</a>
-          <a href="#como-funciona" className="text-sm text-[#8899bb] hover:text-white transition-colors">Cómo funciona</a>
-          <a href="#precios" className="text-sm text-[#8899bb] hover:text-white transition-colors">Precios</a>
-        </div>
+        <div className="w-full h-px mb-8 opacity-50 relative z-10" style={{ background: 'linear-gradient(to right, transparent, #00c8ff 25%, transparent 50%, #6644ff 75%, transparent)' }} />
 
-        <div className="flex items-center justify-center gap-6 mb-8">
-          <a
-            href="https://wa.me/573118070620"
-            target="_blank"
-            rel="noreferrer"
-            className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#25D366] hover:text-white transition-all"
-          >
-            <SiWhatsapp size={20} />
-          </a>
-          <a
-            href="https://instagram.com/prixma"
-            target="_blank"
-            rel="noreferrer"
-            className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#E1306C] hover:text-white transition-all"
-          >
-            <SiInstagram size={20} />
-          </a>
+        <div className="text-center relative z-10">
+          <p className="text-xs text-[#8899bb]/50">
+            © {new Date().getFullYear()} PRIXMA. Todos los derechos reservados.
+          </p>
         </div>
-
-        <p className="text-xs text-[#8899bb]/50">
-          © {new Date().getFullYear()} PRIXMA. Todos los derechos reservados.
-        </p>
       </div>
     </footer>
   );
@@ -946,7 +1145,7 @@ function CardReveal({ children, delay = 0 }: { children: React.ReactNode; delay?
       ref={ref}
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+      transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
       className="h-full"
     >
       {children}
