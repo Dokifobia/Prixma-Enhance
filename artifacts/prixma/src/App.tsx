@@ -48,35 +48,172 @@ function AnimatedStepNum({ num }: { num: number }) {
 }
 
 function StaggeredText({ text, className }: { text: string; className?: string }) {
-  const words = text.split(" ");
   return (
     <motion.h1
       className={className}
       style={{
-        background: "linear-gradient(135deg, #00c8ff 0%, #ffffff 50%, #4444ff 100%)",
+        backgroundImage: "linear-gradient(135deg, #00c8ff 0%, #ffffff 55%, #6644ff 100%)",
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent",
         backgroundClip: "text",
       }}
-      initial="hidden"
-      animate="visible"
-      variants={{
-        visible: { transition: { staggerChildren: 0.12 } }
-      }}
+      initial={{ opacity: 0, y: 32, filter: "blur(12px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          className="inline-block mr-[0.25em]"
-          variants={{
-            hidden: { opacity: 0, y: 30 },
-            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
-          }}
-        >
-          {word}
-        </motion.span>
-      ))}
+      {text}
     </motion.h1>
+  );
+}
+
+/* ── Floating Bot Widget ───────────────────────────────────── */
+const BOT_MESSAGES = [
+  "¡Hola! ¿Te ayudo a digitalizar tu negocio? 👋",
+  "¿Qué servicio te interesa? 🌐 Web o 🤖 IA",
+  "Entrega en solo 5 días. ¿Hablamos? ⚡",
+  "¿Listo para automatizar? ¡Escríbenos! 🚀",
+];
+
+function FloatingBot() {
+  const [showBubble, setShowBubble] = useState(false);
+  const [bubbleClosed, setBubbleClosed] = useState(false);
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+
+  /* show bubble after 2.5 s */
+  useEffect(() => {
+    const t = setTimeout(() => setShowBubble(true), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
+  /* track scroll */
+  useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /* change message based on scroll depth */
+  useEffect(() => {
+    const idx =
+      scrollY < 400 ? 0 :
+      scrollY < 900 ? 1 :
+      scrollY < 1800 ? 2 : 3;
+    if (idx !== msgIndex) {
+      setMsgIndex(idx);
+      if (bubbleClosed) {
+        setBubbleClosed(false); /* re-show bubble with new message */
+      }
+    }
+  }, [scrollY]);
+
+  const handleClick = () => {
+    const msg = encodeURIComponent("¡Hola PRIXMA! Me gustaría saber más sobre sus servicios 😊");
+    window.open(`https://wa.me/573118070620?text=${msg}`, "_blank");
+  };
+
+  /* subtle shake when scroll changes section */
+  const shakeAnim = {
+    animate: { rotate: [0, -8, 8, -5, 5, 0] },
+    transition: { duration: 0.5 },
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
+      {/* Speech bubble */}
+      <AnimatePresence mode="wait">
+        {showBubble && !bubbleClosed && (
+          <motion.div
+            key={msgIndex}
+            initial={{ opacity: 0, x: 20, scale: 0.85, y: 8 }}
+            animate={{ opacity: 1, x: 0, scale: 1, y: 0 }}
+            exit={{ opacity: 0, x: 16, scale: 0.88 }}
+            transition={{ type: "spring", stiffness: 320, damping: 24 }}
+            className="pointer-events-auto relative max-w-[220px] rounded-2xl rounded-br-[4px] px-4 py-3 text-sm text-white shadow-2xl"
+            style={{
+              background: "linear-gradient(135deg, #0d1530 0%, #111827 100%)",
+              border: "1px solid rgba(0,200,255,0.25)",
+              boxShadow: "0 0 24px rgba(0,200,255,0.12), 0 8px 32px rgba(0,0,0,0.5)",
+            }}
+          >
+            {BOT_MESSAGES[msgIndex]}
+            {/* triangle tail */}
+            <span
+              className="absolute -bottom-[7px] right-4 w-3 h-3 rotate-45"
+              style={{
+                background: "#111827",
+                borderRight: "1px solid rgba(0,200,255,0.25)",
+                borderBottom: "1px solid rgba(0,200,255,0.25)",
+              }}
+            />
+            <button
+              onClick={() => setBubbleClosed(true)}
+              className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#1a2540] border border-white/20 text-[10px] text-white/60 hover:text-white flex items-center justify-center transition-colors"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bot button */}
+      <motion.button
+        onClick={handleClick}
+        className="pointer-events-auto relative w-[60px] h-[60px] rounded-full flex items-center justify-center cursor-pointer select-none"
+        animate={{ y: [0, -7, 0] }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+        whileHover={{ scale: 1.12 }}
+        whileTap={{ scale: 0.92 }}
+        aria-label="Hablar con un experto"
+      >
+        {/* Glow pulse behind button */}
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          animate={{ scale: [1, 1.55, 1], opacity: [0.45, 0, 0.45] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          style={{ background: "radial-gradient(circle, rgba(0,200,255,0.5) 0%, transparent 70%)" }}
+        />
+
+        {/* Rotating dashed orbital ring */}
+        <motion.svg
+          className="absolute inset-[-10px] w-[calc(100%+20px)] h-[calc(100%+20px)]"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+          viewBox="0 0 80 80"
+        >
+          <circle
+            cx="40" cy="40" r="36"
+            fill="none"
+            stroke="url(#botRingGrad)"
+            strokeWidth="1.5"
+            strokeDasharray="6 10"
+            strokeLinecap="round"
+          />
+          <defs>
+            <linearGradient id="botRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#00c8ff" stopOpacity="0.9" />
+              <stop offset="50%" stopColor="#6644ff" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#00c8ff" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </motion.svg>
+
+        {/* Solid circle background */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: "linear-gradient(135deg, #00c8ff 0%, #0070cc 50%, #6644ff 100%)",
+            boxShadow: "0 4px 24px rgba(0,200,255,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset",
+          }}
+        />
+
+        {/* Bot icon */}
+        <Bot size={26} className="relative z-10 text-white drop-shadow-md" />
+
+        {/* Tiny "online" dot */}
+        <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-[#080c18] z-20" />
+      </motion.button>
+    </div>
   );
 }
 
@@ -92,6 +229,7 @@ export default function App() {
       <Testimonios />
       <Contacto />
       <Footer />
+      <FloatingBot />
     </div>
   );
 }
