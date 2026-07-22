@@ -243,17 +243,65 @@ export default function App() {
   );
 }
 
+function PrixmaLogoMark({ size = 36 }: { size?: number }) {
+  const id = `prixma-grad-${size}`;
+  const id2 = `prixma-grad2-${size}`;
+  const id3 = `prixma-glow-${size}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#00c8ff" />
+          <stop offset="100%" stopColor="#6644ff" />
+        </linearGradient>
+        <linearGradient id={id2} x1="10" y1="8" x2="30" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#00c8ff" />
+          <stop offset="100%" stopColor="#a78bff" />
+        </linearGradient>
+        <filter id={id3} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      {/* Outer rounded square with gradient border */}
+      <rect x="1" y="1" width="38" height="38" rx="10" fill="#080d1a" />
+      <rect x="1" y="1" width="38" height="38" rx="10" fill="none" stroke={`url(#${id})`} strokeWidth="1.5" />
+      {/* Inner subtle background glow */}
+      <rect x="4" y="4" width="32" height="32" rx="8" fill="url(#prixma-inner)" opacity="0.15" />
+      {/* Stylised P mark — vertical stem */}
+      <line x1="13" y1="9" x2="13" y2="31" stroke={`url(#${id2})`} strokeWidth="2.8" strokeLinecap="round" />
+      {/* P bowl — arc from top of stem to mid */}
+      <path
+        d="M13 9 C13 9 27 9 27 16 C27 23 13 23 13 23"
+        stroke={`url(#${id2})`}
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Accent dot — bottom right, cyan */}
+      <circle cx="28" cy="29" r="2.2" fill="#00c8ff" filter={`url(#${id3})`} />
+      {/* Tiny diagonal accent line suggesting motion */}
+      <line x1="17" y1="31" x2="24" y2="31" stroke="#00c8ff" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+    </svg>
+  );
+}
+
 function PrixmaWordmark({ inline = false }: { inline?: boolean }) {
   if (inline) {
     return (
       <div className="flex items-center gap-2.5">
-        <img
-          src="/logo-prixma.png"
-          alt="PRIXMA"
-          style={{ width: 34, height: 34, objectFit: "contain" }}
-          className="rounded-sm"
-        />
-        <span className="font-bold text-xl tracking-[0.18em] text-white" style={{ letterSpacing: "0.18em" }}>
+        <PrixmaLogoMark size={36} />
+        <span
+          className="font-bold text-xl text-white"
+          style={{
+            letterSpacing: "0.2em",
+            background: "linear-gradient(90deg,#ffffff 60%,#a78bff 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
           PRIXMA
         </span>
       </div>
@@ -261,14 +309,18 @@ function PrixmaWordmark({ inline = false }: { inline?: boolean }) {
   }
   return (
     <div className="flex flex-col items-center gap-3">
-      <img
-        src="/logo-prixma.png"
-        alt="PRIXMA"
-        style={{ width: 80, height: 80, objectFit: "contain" }}
-        className="rounded-md"
-      />
+      <PrixmaLogoMark size={80} />
       <div className="flex flex-col items-center gap-1">
-        <span className="font-bold text-2xl tracking-[0.22em] text-white">
+        <span
+          className="font-bold text-2xl"
+          style={{
+            letterSpacing: "0.22em",
+            background: "linear-gradient(90deg,#ffffff 50%,#a78bff 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
           PRIXMA
         </span>
         <p className="text-[#8899bb] tracking-widest text-xs uppercase">Automatiza • Convierte • Escala</p>
