@@ -1,7 +1,25 @@
-import { useState, useEffect, useRef } from "react";
-import { motion, useInView, AnimatePresence, useSpring, useMotionValue } from "framer-motion";
+import { useState, useEffect, useRef, isValidElement } from "react";
+import { motion, useInView, AnimatePresence, useSpring, useMotionValue, useScroll, useMotionTemplate } from "framer-motion";
 import { Code2, Settings2, Zap, Bot, MessageCircle, CheckCircle2, ChevronRight, Star, Menu, X, Clock, TrendingUp, Users } from "lucide-react";
 import { SiWhatsapp, SiInstagram } from "react-icons/si";
+
+/* ── Scroll Progress Bar ───────────────────────────────────── */
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll();
+  return (
+    <motion.div
+      className="fixed top-0 left-0 h-[2px] z-[9999]"
+      style={{
+        scaleX: scrollYProgress,
+        transformOrigin: "left",
+        background: "linear-gradient(to right, #00c8ff, #6644ff, #a855f7)",
+        width: "100%"
+      }}
+    >
+      <div className="absolute right-0 top-0 h-[2px] w-[20px] shadow-[0_0_10px_#a855f7,0_0_20px_#a855f7] bg-white rounded-full blur-[1px]" />
+    </motion.div>
+  );
+}
 
 function useCountUp(end: number, duration: number = 2000) {
   const [count, setCount] = useState(0);
@@ -32,11 +50,67 @@ function useCountUp(end: number, duration: number = 2000) {
   return { count, ref };
 }
 
+/* ── Slot Machine Animated Stat ────────────────────────────── */
 function AnimatedStat({ num, suffix = "", label }: { num: number; suffix?: string; label: string }) {
-  const { count, ref } = useCountUp(num, 2000);
+  const [count, setCount] = useState(0);
+  const [isFlickering, setIsFlickering] = useState(false);
+  const [flickerVal, setFlickerVal] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  useEffect(() => {
+    if (!isInView) return;
+    let startTime: number | null = null;
+    let animationFrame: number;
+    const duration = 2000;
+
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeOut * num));
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(step);
+      } else {
+        setIsFlickering(true);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [num, isInView]);
+
+  useEffect(() => {
+    if (!isFlickering) return;
+    let endFlickerTime = Date.now() + 300;
+    let interval = setInterval(() => {
+      if (Date.now() > endFlickerTime) {
+        clearInterval(interval);
+        setIsFlickering(false);
+      } else {
+        setFlickerVal(Math.floor(num * 0.8 + Math.random() * (num * 0.4)));
+      }
+    }, 40);
+    return () => clearInterval(interval);
+  }, [isFlickering, num]);
+
+  const displayNum = isFlickering ? flickerVal : count;
+
   return (
     <div ref={ref} className="text-center">
-      <div className="text-5xl font-black text-[#00c8ff] mb-2 font-sans tracking-tight">{count}{suffix}</div>
+      <div 
+        className="text-6xl md:text-7xl font-black mb-2 font-sans tracking-tight drop-shadow-[0_0_20px_rgba(0,200,255,0.5)]"
+        style={{
+          backgroundImage: "linear-gradient(135deg, #00c8ff 0%, #6644ff 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text"
+        }}
+      >
+        {displayNum}{suffix}
+      </div>
       <div className="text-xs text-[#8899bb] font-bold uppercase tracking-widest">{label}</div>
     </div>
   );
@@ -66,31 +140,299 @@ function StaggeredText({ text, className }: { text: string; className?: string }
   );
 }
 
-/* ── Custom Cursor ─────────────────────────────────────────── */
+/* ── Custom Cursor Premium (Dual) ──────────────────────────── */
 function CustomCursor() {
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
 
-  const springConfig = { stiffness: 300, damping: 20 };
+  const springConfig = { stiffness: 80, damping: 15 };
   const smoothX = useSpring(cursorX, springConfig);
   const smoothY = useSpring(cursorY, springConfig);
 
+  const [isHover, setIsHover] = useState(false);
+
   useEffect(() => {
-    // Only apply custom cursor on fine pointer devices (desktop)
     if (window.matchMedia("(pointer: coarse)").matches) return;
 
     const moveCursor = (e: MouseEvent) => {
-      cursorX.set(e.clientX - 5);
-      cursorY.set(e.clientY - 5);
+      cursorX.set(e.clientX);
+      cursorY.set(e.clientY);
     };
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-cursor-hover]')) {
+        setIsHover(true);
+      } else {
+        setIsHover(false);
+      }
+    };
+
     window.addEventListener("mousemove", moveCursor);
-    return () => window.removeEventListener("mousemove", moveCursor);
+    window.addEventListener("mouseover", handleMouseOver);
+    return () => {
+      window.removeEventListener("mousemove", moveCursor);
+      window.removeEventListener("mouseover", handleMouseOver);
+    };
   }, [cursorX, cursorY]);
+
+  if (typeof window !== 'undefined' && window.matchMedia("(pointer: coarse)").matches) return null;
+
+  return (
+    <>
+      <motion.div
+        style={{ x: cursorX, y: cursorY, translateX: '-50%', translateY: '-50%' }}
+        className="hidden md:block fixed top-0 left-0 w-[8px] h-[8px] bg-[#00c8ff] rounded-full pointer-events-none z-[9999] shadow-[0_0_10px_#00c8ff]"
+      />
+      <motion.div
+        style={{ x: smoothX, y: smoothY, translateX: '-50%', translateY: '-50%' }}
+        animate={{
+          scale: isHover ? 2.5 : 1,
+          opacity: isHover ? 0.4 : 0.8,
+        }}
+        transition={{ duration: 0.2 }}
+        className="hidden md:block fixed top-0 left-0 w-[36px] h-[36px] border-[1.5px] border-[#00c8ff] rounded-full pointer-events-none z-[9998]"
+      />
+    </>
+  );
+}
+
+/* ── Magnetic Button ───────────────────────────────────────── */
+function MagneticButton({ children, className = "" }: { children: React.ReactNode, className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  
+  const smoothX = useSpring(x, { stiffness: 200, damping: 15 });
+  const smoothY = useSpring(y, { stiffness: 200, damping: 15 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      const distance = Math.sqrt((e.clientX - centerX) ** 2 + (e.clientY - centerY) ** 2);
+      
+      if (distance < 80) {
+        x.set((e.clientX - centerX) * 0.35);
+        y.set((e.clientY - centerY) * 0.35);
+      } else {
+        x.set(0);
+        y.set(0);
+      }
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [x, y]);
+
+  return (
+    <motion.div ref={ref} style={{ x: smoothX, y: smoothY }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+/* ── 3D Tilt Card ──────────────────────────────────────────── */
+function TiltCard({ children, className = "", delay = 0 }: { children: React.ReactNode, className?: string, delay?: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+  
+  const smoothX = useSpring(rotateX, { stiffness: 300, damping: 20 });
+  const smoothY = useSpring(rotateY, { stiffness: 300, damping: 20 });
+
+  const mouseX = useMotionValue(-1000);
+  const mouseY = useMotionValue(-1000);
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    mouseX.set(x);
+    mouseY.set(y);
+
+    const rX = -((y / rect.height) - 0.5) * 15;
+    const rY = ((x / rect.width) - 0.5) * 15;
+    
+    rotateX.set(rX);
+    rotateY.set(rY);
+  };
+
+  const handleMouseLeave = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+    mouseX.set(-1000);
+    mouseY.set(-1000);
+  };
+
+  return (
+    <CardReveal delay={delay}>
+      <motion.div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{ 
+          rotateX: smoothX, 
+          rotateY: smoothY, 
+          transformPerspective: 1000,
+        }}
+        className={`relative ${className}`}
+      >
+        {children}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-50 rounded-2xl"
+          style={{
+            background: useMotionTemplate`radial-gradient(200px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.08), transparent 100%)`
+          }}
+        />
+      </motion.div>
+    </CardReveal>
+  );
+}
+
+/* ── Particle Canvas ───────────────────────────────────────── */
+function ParticleCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let particles: any[] = [];
+    let mouse = { x: -1000, y: -1000 };
+
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.offsetWidth;
+        canvas.height = parent.offsetHeight;
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+    };
+    
+    window.addEventListener('resize', resize);
+    resize();
+
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    };
+    window.addEventListener('mousemove', onMouseMove);
+
+    for (let i = 0; i < 80; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        radius: Math.random() * 1 + 1,
+        color: Math.random() > 0.5 ? '#00c8ff' : '#a855f7',
+        opacity: Math.random() * 0.4 + 0.2
+      });
+    }
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < particles.length; i++) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        let dxMouse = mouse.x - p.x;
+        let dyMouse = mouse.y - p.y;
+        let distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
+        if (distMouse < 150) {
+          p.x += dxMouse * 0.01;
+          p.y += dyMouse * 0.01;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.opacity;
+        ctx.fill();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          let p2 = particles[j];
+          let dx = p.x - p2.x;
+          let dy = p.y - p2.y;
+          let dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 120) {
+            ctx.beginPath();
+            let grad = ctx.createLinearGradient(p.x, p.y, p2.x, p2.y);
+            grad.addColorStop(0, p.color);
+            grad.addColorStop(1, p2.color);
+            ctx.strokeStyle = grad;
+            ctx.globalAlpha = (1 - dist / 120) * 0.5;
+            ctx.lineWidth = 1;
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', onMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 z-[1] pointer-events-none" />;
+}
+
+/* ── Hero Spotlight ────────────────────────────────────────── */
+function HeroSpotlight({ containerRef }: { containerRef: React.RefObject<HTMLElement> }) {
+  const mouseX = useMotionValue(-1000);
+  const mouseY = useMotionValue(-1000);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      if (
+        e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom
+      ) {
+        mouseX.set(e.clientX - rect.left);
+        mouseY.set(e.clientY - rect.top);
+      } else {
+        mouseX.set(-1000);
+        mouseY.set(-1000);
+      }
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    return () => window.removeEventListener('mousemove', onMouseMove);
+  }, [mouseX, mouseY, containerRef]);
 
   return (
     <motion.div
-      style={{ x: smoothX, y: smoothY }}
-      className="hidden md:block fixed top-0 left-0 w-[10px] h-[10px] bg-[#00c8ff] rounded-full pointer-events-none z-[9999] opacity-70 blur-[1px] shadow-[0_0_10px_#00c8ff]"
+      className="pointer-events-none absolute inset-0 z-[2]"
+      style={{
+        background: useMotionTemplate`radial-gradient(600px circle at ${mouseX}px ${mouseY}px, rgba(0,200,255,0.04), transparent 80%)`
+      }}
     />
   );
 }
@@ -182,6 +524,7 @@ function FloatingBot() {
         whileHover={{ scale: 1.12 }}
         whileTap={{ scale: 0.92 }}
         aria-label="Hablar con un experto"
+        data-cursor-hover
       >
         <motion.div
           className="absolute inset-0 rounded-full"
@@ -228,6 +571,11 @@ function FloatingBot() {
 export default function App() {
   return (
     <div className="min-h-[100dvh] w-full bg-[#080c18] text-white overflow-x-hidden relative">
+      <svg style={{position:'fixed',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:9998,opacity:0.035,mixBlendMode:'overlay'}} xmlns='http://www.w3.org/2000/svg'>
+        <filter id='grain'><feTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter>
+        <rect width='100%' height='100%' filter='url(#grain)'/>
+      </svg>
+      <ScrollProgress />
       <CustomCursor />
       <Navbar />
       <Hero />
@@ -263,14 +611,10 @@ function PrixmaLogoMark({ size = 36 }: { size?: number }) {
           <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
-      {/* Outer rounded square with gradient border */}
       <rect x="1" y="1" width="38" height="38" rx="10" fill="#080d1a" />
       <rect x="1" y="1" width="38" height="38" rx="10" fill="none" stroke={`url(#${id})`} strokeWidth="1.5" />
-      {/* Inner subtle background glow */}
       <rect x="4" y="4" width="32" height="32" rx="8" fill="url(#prixma-inner)" opacity="0.15" />
-      {/* Stylised P mark — vertical stem */}
       <line x1="13" y1="9" x2="13" y2="31" stroke={`url(#${id2})`} strokeWidth="2.8" strokeLinecap="round" />
-      {/* P bowl — arc from top of stem to mid */}
       <path
         d="M13 9 C13 9 27 9 27 16 C27 23 13 23 13 23"
         stroke={`url(#${id2})`}
@@ -279,9 +623,7 @@ function PrixmaLogoMark({ size = 36 }: { size?: number }) {
         strokeLinejoin="round"
         fill="none"
       />
-      {/* Accent dot — bottom right, cyan */}
       <circle cx="28" cy="29" r="2.2" fill="#00c8ff" filter={`url(#${id3})`} />
-      {/* Tiny diagonal accent line suggesting motion */}
       <line x1="17" y1="31" x2="24" y2="31" stroke="#00c8ff" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
     </svg>
   );
@@ -370,15 +712,18 @@ function Navbar() {
             <a href="#contacto" className="text-sm font-medium text-[#8899bb] hover:text-[#00c8ff] transition-colors" data-testid="link-contacto">Contacto</a>
           </div>
 
-          <a
-            href="https://wa.me/573108131732"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden md:flex items-center gap-2 bg-[#00c8ff] hover:bg-[#00b0e0] px-6 py-2.5 rounded-full text-sm font-bold text-[#080c18] transition-all shadow-[0_0_15px_rgba(0,200,255,0.3)] hover:shadow-[0_0_25px_rgba(0,200,255,0.5)]"
-            data-testid="button-nav-cta"
-          >
-            Hablar con un experto
-          </a>
+          <MagneticButton className="hidden md:block">
+            <a
+              href="https://wa.me/573108131732"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 bg-[#00c8ff] hover:bg-[#00b0e0] px-6 py-2.5 rounded-full text-sm font-bold text-[#080c18] transition-all shadow-[0_0_15px_rgba(0,200,255,0.3)] hover:shadow-[0_0_25px_rgba(0,200,255,0.5)]"
+              data-testid="button-nav-cta"
+              data-cursor-hover
+            >
+              Hablar con un experto
+            </a>
+          </MagneticButton>
 
           <button 
             className="md:hidden text-white p-2" 
@@ -454,9 +799,13 @@ function Navbar() {
 }
 
 function Hero() {
+  const heroRef = useRef<HTMLElement>(null);
   return (
-    <section className="relative min-h-[100dvh] flex items-center justify-center pt-20 overflow-hidden" id="hero">
+    <section ref={heroRef} className="relative min-h-[100dvh] flex items-center justify-center pt-20 overflow-hidden" id="hero">
       
+      <ParticleCanvas />
+      <HeroSpotlight containerRef={heroRef} />
+
       {/* Background Circuit Pattern */}
       <div 
         className="absolute inset-0 z-0 pointer-events-none opacity-5" 
@@ -515,21 +864,27 @@ function Hero() {
             transition={{ duration: 0.5, delay: 0.7 }}
             className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
           >
-            <a
-              href="#contacto"
-              className="group relative w-full sm:w-auto px-8 py-4 rounded-xl bg-[#00c8ff] text-[#080c18] font-bold text-lg transition-transform hover:scale-105 shadow-[0_0_20px_rgba(0,200,255,0.4)] overflow-hidden"
-              data-testid="button-hero-web"
-            >
-              <div className="absolute inset-0 w-full h-full transform -translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer-slide" />
-              <span className="relative z-10">Quiero mi página web</span>
-            </a>
-            <a
-              href="#contacto"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/5 border border-[#6644ff]/50 text-white font-semibold text-lg transition-all hover:bg-white/10 hover:border-[#6644ff] shadow-[0_0_15px_rgba(102,68,255,0.2)] hover:shadow-[0_0_25px_rgba(102,68,255,0.4)]"
-              data-testid="button-hero-auto"
-            >
-              Automatizar mi negocio
-            </a>
+            <MagneticButton className="w-full sm:w-auto flex">
+              <a
+                href="#contacto"
+                className="group relative w-full px-8 py-4 rounded-xl bg-[#00c8ff] text-[#080c18] font-bold text-lg transition-transform hover:scale-105 shadow-[0_0_20px_rgba(0,200,255,0.4)] overflow-hidden text-center"
+                data-testid="button-hero-web"
+                data-cursor-hover
+              >
+                <div className="absolute inset-0 w-full h-full transform -translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer-slide" />
+                <span className="relative z-10">Quiero mi página web</span>
+              </a>
+            </MagneticButton>
+            <MagneticButton className="w-full sm:w-auto flex">
+              <a
+                href="#contacto"
+                className="w-full px-8 py-4 rounded-xl bg-white/5 border border-[#6644ff]/50 text-white font-semibold text-lg transition-all hover:bg-white/10 hover:border-[#6644ff] shadow-[0_0_15px_rgba(102,68,255,0.2)] hover:shadow-[0_0_25px_rgba(102,68,255,0.4)] text-center"
+                data-testid="button-hero-auto"
+                data-cursor-hover
+              >
+                Automatizar mi negocio
+              </a>
+            </MagneticButton>
           </motion.div>
 
           <motion.div
@@ -547,7 +902,7 @@ function Hero() {
         </div>
 
         {/* Right Content: Floating Dashboard */}
-        <div className="hidden lg:flex items-center justify-center relative h-full">
+        <div className="hidden lg:flex items-center justify-center relative h-full pointer-events-none">
            <motion.div
              animate={{ y: [-15, 15, -15] }}
              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
@@ -624,91 +979,89 @@ function Servicios() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          <CardReveal>
-            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#00c8ff]/20 rounded-2xl p-8 transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] hover:border-[#00c8ff]/60 hover:shadow-[0_0_30px_rgba(0,200,255,0.15)] hover:-translate-y-1 relative overflow-hidden flex flex-col">
-              <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent to-[#00c8ff]" />
-              
-              <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 pointer-events-none">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,200,255,0.4)_0%,transparent_60%)] scale-[3]" />
-                  <Code2 size={160} color="#00c8ff" className="opacity-10 group-hover:opacity-20 transition-opacity" />
-                </div>
+          <TiltCard delay={0} className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#00c8ff]/20 rounded-2xl p-8 transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] hover:border-[#00c8ff]/60 hover:shadow-[0_0_30px_rgba(0,200,255,0.15)] relative overflow-hidden flex flex-col">
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent to-[#00c8ff]" />
+            
+            <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 pointer-events-none">
+              <div className="relative">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,200,255,0.4)_0%,transparent_60%)] scale-[3]" />
+                <Code2 size={160} color="#00c8ff" className="opacity-10 group-hover:opacity-20 transition-opacity" />
               </div>
-
-              <div className="relative z-10 w-16 h-16 rounded-xl bg-[#00c8ff]/10 flex items-center justify-center mb-6 border border-[#00c8ff]/30 group-hover:scale-110 transition-transform">
-                <Code2 size={32} className="text-[#00c8ff]" />
-              </div>
-              <h3 className="relative z-10 text-2xl font-bold mb-4">Páginas Web Profesionales</h3>
-              <p className="relative z-10 text-[#8899bb] mb-6 leading-relaxed">
-                Diseñamos tu página web con IA en tiempo récord. Diseño premium, optimizada para vender, con dominio propio.
-              </p>
-              
-              <div className="relative z-10 flex flex-wrap gap-2 mb-8">
-                {["React", "Next.js", "Vercel"].map((tag, idx) => (
-                  <span key={idx} className="px-3 py-1 rounded-md bg-[#080c18] border border-white/10 text-[11px] text-[#8899bb] font-bold uppercase tracking-widest">{tag}</span>
-                ))}
-              </div>
-
-              <ul className="relative z-10 space-y-3 mb-10 flex-grow">
-                {["Diseño personalizado", "SEO incluido", "Formulario de contacto", "Adaptada a móviles", "Entrega en 5 días"].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-white/90">
-                    <CheckCircle2 size={18} className="text-[#00c8ff]" /> {item}
-                  </li>
-                ))}
-              </ul>
-              
-              <a
-                href="#contacto"
-                className="relative z-10 inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
-                data-testid="button-service-web"
-              >
-                Quiero mi web <ChevronRight size={18} />
-              </a>
             </div>
-          </CardReveal>
 
-          <CardReveal delay={0.2}>
-            <div className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#6644ff]/20 rounded-2xl p-8 transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] hover:border-[#6644ff]/60 hover:shadow-[0_0_30px_rgba(102,68,255,0.15)] hover:-translate-y-1 relative overflow-hidden flex flex-col">
-              <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent to-[#6644ff]" />
-
-              <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 pointer-events-none">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(102,68,255,0.4)_0%,transparent_60%)] scale-[3]" />
-                  <Settings2 size={160} color="#6644ff" className="opacity-10 group-hover:opacity-20 transition-opacity" />
-                </div>
-              </div>
-
-              <div className="relative z-10 w-16 h-16 rounded-xl bg-[#6644ff]/10 flex items-center justify-center mb-6 border border-[#6644ff]/30 group-hover:scale-110 transition-transform">
-                <Settings2 size={32} className="text-[#6644ff]" />
-              </div>
-              <h3 className="relative z-10 text-2xl font-bold mb-4">Automatizaciones con IA</h3>
-              <p className="relative z-10 text-[#8899bb] mb-6 leading-relaxed">
-                Automatizamos las tareas repetitivas de tu negocio: respuestas automáticas, agendamiento, seguimiento de clientes y más.
-              </p>
-              
-              <div className="relative z-10 flex flex-wrap gap-2 mb-8">
-                {["GPT-4", "n8n", "WhatsApp API"].map((tag, idx) => (
-                  <span key={idx} className="px-3 py-1 rounded-md bg-[#080c18] border border-white/10 text-[11px] text-[#8899bb] font-bold uppercase tracking-widest">{tag}</span>
-                ))}
-              </div>
-
-              <ul className="relative z-10 space-y-3 mb-10 flex-grow">
-                {["Chatbot WhatsApp/Instagram", "Respuestas 24/7", "Agenda y recordatorios", "Reportes automáticos", "Integración de apps"].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-white/90">
-                    <CheckCircle2 size={18} className="text-[#00c8ff]" /> {item}
-                  </li>
-                ))}
-              </ul>
-              
-              <a
-                href="#contacto"
-                className="relative z-10 inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
-                data-testid="button-service-auto"
-              >
-                Automatizar mi negocio <ChevronRight size={18} />
-              </a>
+            <div className="relative z-10 w-16 h-16 rounded-xl bg-[#00c8ff]/10 flex items-center justify-center mb-6 border border-[#00c8ff]/30 group-hover:scale-110 transition-transform">
+              <Code2 size={32} className="text-[#00c8ff]" />
             </div>
-          </CardReveal>
+            <h3 className="relative z-10 text-2xl font-bold mb-4">Páginas Web Profesionales</h3>
+            <p className="relative z-10 text-[#8899bb] mb-6 leading-relaxed">
+              Diseñamos tu página web con IA en tiempo récord. Diseño premium, optimizada para vender, con dominio propio.
+            </p>
+            
+            <div className="relative z-10 flex flex-wrap gap-2 mb-8">
+              {["React", "Next.js", "Vercel"].map((tag, idx) => (
+                <span key={idx} className="px-3 py-1 rounded-md bg-[#080c18] border border-white/10 text-[11px] text-[#8899bb] font-bold uppercase tracking-widest">{tag}</span>
+              ))}
+            </div>
+
+            <ul className="relative z-10 space-y-3 mb-10 flex-grow">
+              {["Diseño personalizado", "SEO incluido", "Formulario de contacto", "Adaptada a móviles", "Entrega en 5 días"].map((item, i) => (
+                <li key={i} className="flex items-center gap-3 text-sm text-white/90">
+                  <CheckCircle2 size={18} className="text-[#00c8ff]" /> {item}
+                </li>
+              ))}
+            </ul>
+            
+            <a
+              href="#contacto"
+              className="relative z-10 inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
+              data-testid="button-service-web"
+              data-cursor-hover
+            >
+              Quiero mi web <ChevronRight size={18} />
+            </a>
+          </TiltCard>
+
+          <TiltCard delay={0.2} className="group h-full bg-[rgba(255,255,255,0.03)] border border-[#6644ff]/20 rounded-2xl p-8 transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)] hover:border-[#6644ff]/60 hover:shadow-[0_0_30px_rgba(102,68,255,0.15)] relative overflow-hidden flex flex-col">
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent to-[#6644ff]" />
+
+            <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 pointer-events-none">
+              <div className="relative">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(102,68,255,0.4)_0%,transparent_60%)] scale-[3]" />
+                <Settings2 size={160} color="#6644ff" className="opacity-10 group-hover:opacity-20 transition-opacity" />
+              </div>
+            </div>
+
+            <div className="relative z-10 w-16 h-16 rounded-xl bg-[#6644ff]/10 flex items-center justify-center mb-6 border border-[#6644ff]/30 group-hover:scale-110 transition-transform">
+              <Settings2 size={32} className="text-[#6644ff]" />
+            </div>
+            <h3 className="relative z-10 text-2xl font-bold mb-4">Automatizaciones con IA</h3>
+            <p className="relative z-10 text-[#8899bb] mb-6 leading-relaxed">
+              Automatizamos las tareas repetitivas de tu negocio: respuestas automáticas, agendamiento, seguimiento de clientes y más.
+            </p>
+            
+            <div className="relative z-10 flex flex-wrap gap-2 mb-8">
+              {["GPT-4", "n8n", "WhatsApp API"].map((tag, idx) => (
+                <span key={idx} className="px-3 py-1 rounded-md bg-[#080c18] border border-white/10 text-[11px] text-[#8899bb] font-bold uppercase tracking-widest">{tag}</span>
+              ))}
+            </div>
+
+            <ul className="relative z-10 space-y-3 mb-10 flex-grow">
+              {["Chatbot WhatsApp/Instagram", "Respuestas 24/7", "Agenda y recordatorios", "Reportes automáticos", "Integración de apps"].map((item, i) => (
+                <li key={i} className="flex items-center gap-3 text-sm text-white/90">
+                  <CheckCircle2 size={18} className="text-[#00c8ff]" /> {item}
+                </li>
+              ))}
+            </ul>
+            
+            <a
+              href="#contacto"
+              className="relative z-10 inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-transparent border-2 border-[#00c8ff] text-[#00c8ff] font-semibold transition-all duration-300 hover:bg-[#00c8ff]/10 hover:shadow-[0_0_20px_rgba(0,200,255,0.5),0_0_40px_rgba(0,200,255,0.2)]"
+              data-testid="button-service-auto"
+              data-cursor-hover
+            >
+              Automatizar mi negocio <ChevronRight size={18} />
+            </a>
+          </TiltCard>
         </div>
       </div>
     </section>
@@ -1076,6 +1429,7 @@ function Precios() {
                   </motion.ul>
                   <a
                     href="#contacto"
+                    data-cursor-hover
                     className={`relative z-10 block w-full py-3 text-center rounded-xl font-bold transition-colors ${
                       plan.popular
                         ? "bg-[#00c8ff] text-[#080c18] hover:bg-[#0090ff] hover:text-white"
@@ -1142,6 +1496,7 @@ function Precios() {
                   </motion.ul>
                   <a
                     href="#contacto"
+                    data-cursor-hover
                     className={`relative z-10 block w-full py-3 text-center rounded-xl font-bold transition-colors ${
                       plan.popular
                         ? "bg-[#6644ff] text-white hover:bg-[#5533ee]"
@@ -1266,7 +1621,6 @@ function Testimonios() {
                   <div>
                     <div className="font-semibold text-white text-sm">{t.nombre}</div>
                     <div className="text-[#8899bb] text-xs">{t.negocio}</div>
-                    <div className="text-[#8899bb] text-xs">{t.ciudad}</div>
                   </div>
                 </div>
               </div>
@@ -1279,138 +1633,42 @@ function Testimonios() {
 }
 
 function Contacto() {
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [messageText, setMessageText] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-
-  const toggleService = (id: string) => {
-    setSelectedServices((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-  };
-
   const handleWhatsApp = () => {
-    const serviceLabels: Record<string, string> = {
-      web: "Página Web Profesional",
-      auto: "Automatización IA",
-    };
-    const selected = selectedServices.map((s) => serviceLabels[s]).join(" y ");
-    if (!selected) {
-      alert("Por favor selecciona al menos un servicio 😊");
-      return;
-    }
-    const texto = `¡Hola! Estoy interesado en: *${selected}*\n\n${messageText ? "Sobre mi negocio: " + messageText : ""}`;
-    const url = `https://wa.me/573108131732?text=${encodeURIComponent(texto)}`;
-    window.open(url, "_blank");
+    const text = encodeURIComponent("¡Hola PRIXMA! Me interesa cotizar un servicio.");
+    window.open(`https://wa.me/573108131732?text=${text}`, "_blank");
   };
 
   return (
-    <section className="py-24 relative overflow-hidden" id="contacto">
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#00c8ff]/10 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#6644ff]/10 rounded-full blur-[100px] pointer-events-none"></div>
+    <section className="py-24 bg-[#0d1225] relative overflow-hidden" id="contacto">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-[#00c8ff]/10 to-[#6644ff]/10 rounded-full blur-[100px]" />
+      </div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">¿Qué necesita tu negocio?</h2>
-          <p className="text-xl text-[#8899bb]">Cuéntanos en qué podemos ayudarte y te respondemos en menos de 2 horas</p>
-        </div>
-
-        <div className="grid lg:grid-cols-[1fr_350px] gap-8 max-w-5xl mx-auto relative z-10">
+        <div className="max-w-4xl mx-auto bg-[#080c18] border border-white/10 rounded-3xl p-8 md:p-16 text-center shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          <div className="w-16 h-16 bg-gradient-to-r from-[#00c8ff] to-[#6644ff] rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(0,200,255,0.3)]">
+            <Bot size={32} className="text-white" />
+          </div>
           
-          {/* Form (Glassmorphism) */}
-          <div className="bg-[#ffffff05] backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_20px_40px_rgba(0,0,0,0.5)] relative">
-            <div className="mb-8">
-              <h3 className="text-white font-medium mb-4">Selecciona los servicios de interés:</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <button
-                  onClick={() => toggleService("web")}
-                  className={`p-6 rounded-2xl border-2 text-left transition-all duration-300 ${
-                    selectedServices.includes("web")
-                      ? "border-[#00c8ff] bg-[#00c8ff]/10 scale-[1.02] shadow-[0_0_20px_rgba(0,200,255,0.15)]"
-                      : "border-white/10 bg-white/5 hover:border-white/20"
-                  }`}
-                  data-testid="toggle-service-web"
-                >
-                  <div className="text-2xl mb-2">🌐</div>
-                  <div className="font-bold text-white mb-1">Página Web Profesional</div>
-                  <div className="text-xs text-[#8899bb]">Quiero presencia online profesional</div>
-                </button>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">¿Listo para transformar tu negocio?</h2>
+          <p className="text-xl text-[#8899bb] mb-10 max-w-2xl mx-auto">
+            Hablemos por WhatsApp. Te asesoramos sin compromiso y te damos una cotización en minutos.
+          </p>
 
-                <button
-                  onClick={() => toggleService("auto")}
-                  className={`p-6 rounded-2xl border-2 text-left transition-all duration-300 ${
-                    selectedServices.includes("auto")
-                      ? "border-[#6644ff] bg-[#6644ff]/10 scale-[1.02] shadow-[0_0_20px_rgba(102,68,255,0.15)]"
-                      : "border-white/10 bg-white/5 hover:border-white/20"
-                  }`}
-                  data-testid="toggle-service-auto"
-                >
-                  <div className="text-2xl mb-2">🤖</div>
-                  <div className="font-bold text-white mb-1">Automatización IA</div>
-                  <div className="text-xs text-[#8899bb]">Quiero ahorrar tiempo y atender más clientes</div>
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <label className={`block font-medium mb-4 transition-colors duration-300 ${isFocused ? 'text-[#00c8ff]' : 'text-white'}`} htmlFor="message">
-                Cuéntanos sobre tu negocio:
-              </label>
-              <textarea
-                id="message"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder="Ej: Tengo un restaurante y me gustaría una página web para mostrar el menú y un bot que tome reservas..."
-                className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-white placeholder-[#8899bb]/50 focus:outline-none focus:border-[#00c8ff] focus:ring-1 focus:ring-[#00c8ff] transition-all resize-none min-h-[120px]"
-                data-testid="input-contact-message"
-              />
-            </div>
-
-            <div className="text-center mt-8">
-              <button
-                onClick={handleWhatsApp}
-                className="w-full sm:w-auto px-10 py-5 rounded-xl text-white font-bold text-lg flex items-center justify-center gap-3 mx-auto transition-all transform hover:scale-105 shadow-lg relative overflow-hidden group"
-                style={{
-                  background: "linear-gradient(135deg, #25D366, #128C7E)",
-                  boxShadow: "0 0 20px rgba(37,211,102,0.3)",
-                }}
-                data-testid="button-contact-whatsapp"
-              >
-                <div className="absolute inset-0 w-full h-full transform -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-shimmer-slide" />
-                <SiWhatsapp size={24} className="relative z-10" /> <span className="relative z-10">Enviar por WhatsApp</span>
-              </button>
-            </div>
+          <button
+            onClick={handleWhatsApp}
+            data-cursor-hover
+            className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white font-bold text-lg transition-all hover:scale-105 shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:shadow-[0_0_40px_rgba(37,211,102,0.6)]"
+            data-testid="button-contact-wa"
+          >
+            <SiWhatsapp size={24} className="group-hover:animate-bounce" />
+            Escríbenos al WhatsApp
+          </button>
+          
+          <div className="mt-8 flex items-center justify-center gap-2 text-sm text-[#8899bb]">
+            <Clock size={16} />
+            <span>Respondemos en menos de 5 minutos</span>
           </div>
-
-          {/* Right Panel (Reasons) */}
-          <div className="hidden lg:flex flex-col justify-center space-y-8 bg-black/20 backdrop-blur-md border border-white/5 rounded-3xl p-8 shadow-xl">
-            <h4 className="text-xl font-bold text-white mb-2">¿Por qué contactarnos?</h4>
-            <div className="space-y-6">
-              {[
-                { icon: <Clock size={20} className="text-[#00c8ff]"/>, text: "Respuesta en menos de 2 horas" },
-                { icon: <CheckCircle2 size={20} className="text-[#6644ff]"/>, text: "Sin compromisos" },
-                { icon: <Users size={20} className="text-[#00c8ff]"/>, text: "Equipo colombiano en español" },
-                { icon: <Star size={20} className="text-[#6644ff]"/>, text: "+50 proyectos entregados" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">{item.icon}</div>
-                  <span className="text-[15px] text-[#8899bb] font-medium leading-tight">{item.text}</span>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-white/5 text-center">
-              <p className="text-sm text-[#8899bb]">
-                También estamos en Instagram:<br/>
-                <a href="https://instagram.com/prixma" target="_blank" rel="noreferrer" className="text-white hover:text-[#00c8ff] transition-colors mt-2 inline-block font-medium">
-                  @prixma
-                </a>
-              </p>
-            </div>
-          </div>
-
         </div>
       </div>
     </section>
@@ -1419,77 +1677,70 @@ function Contacto() {
 
 function Footer() {
   return (
-    <>
-      <div className="w-full py-20 border-t border-white/5 bg-gradient-to-b from-transparent to-[#00c8ff]/5 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_center,#00c8ff_0%,transparent_60%)] mix-blend-screen" />
-        <div className="container mx-auto px-6 relative z-10 text-center">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight" style={{
-            background: "linear-gradient(135deg, #fff 0%, #8899bb 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent"
-          }}>
-            Digitaliza tu negocio hoy. <br className="hidden md:block"/> <span className="text-[#00c8ff]">No mañana.</span>
-          </h2>
-        </div>
-      </div>
-      <footer className="bg-[#080c18] pt-16 pb-8 border-t border-[#00c8ff]/20 overflow-hidden">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-center text-center md:text-left mb-16 relative z-10">
-            
-            <div className="flex flex-col items-center md:items-start">
-              <span className="font-bold text-3xl tracking-widest text-white mb-2">PRIXMA</span>
-              <span className="text-[#8899bb] text-sm tracking-wide">Automatiza • Convierte • Escala</span>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-              <a href="#servicios" className="text-sm font-medium text-[#8899bb] hover:text-white transition-colors">Servicios</a>
-              <a href="#como-funciona" className="text-sm font-medium text-[#8899bb] hover:text-white transition-colors">Cómo funciona</a>
-              <a href="#precios" className="text-sm font-medium text-[#8899bb] hover:text-white transition-colors">Precios</a>
-            </div>
-
-            <div className="flex items-center justify-center md:justify-end gap-4">
-              <a
-                href="https://wa.me/573108131732"
-                target="_blank"
-                rel="noreferrer"
-                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#25D366] hover:text-white transition-all hover:scale-110"
-              >
-                <SiWhatsapp size={20} />
-              </a>
-              <a
-                href="https://instagram.com/prixma"
-                target="_blank"
-                rel="noreferrer"
-                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#E1306C] hover:text-white transition-all hover:scale-110"
-              >
-                <SiInstagram size={20} />
-              </a>
-            </div>
-          </div>
-
-          <div className="w-full h-px mb-8 opacity-50 relative z-10" style={{ background: 'linear-gradient(to right, transparent, #00c8ff 25%, transparent 50%, #6644ff 75%, transparent)' }} />
-
-          <div className="text-center relative z-10">
-            <p className="text-xs text-[#8899bb]/50">
-              © {new Date().getFullYear()} PRIXMA. Todos los derechos reservados.
+    <footer className="bg-[#080c18] pt-20 pb-10 border-t border-white/10 relative overflow-hidden">
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="grid md:grid-cols-4 gap-12 mb-16">
+          <div className="md:col-span-2">
+            <PrixmaWordmark />
+            <p className="text-[#8899bb] mt-6 max-w-sm">
+              Agencia de desarrollo web y automatización con inteligencia artificial.
+              Creamos soluciones digitales que venden solas.
             </p>
           </div>
+          <div>
+            <h4 className="font-bold mb-6 text-white text-lg">Servicios</h4>
+            <ul className="space-y-4">
+              <li><a href="#" className="text-[#8899bb] hover:text-[#00c8ff] transition-colors">Diseño Web Premium</a></li>
+              <li><a href="#" className="text-[#8899bb] hover:text-[#00c8ff] transition-colors">Chatbots con IA</a></li>
+              <li><a href="#" className="text-[#8899bb] hover:text-[#00c8ff] transition-colors">Automatización de Ventas</a></li>
+              <li><a href="#" className="text-[#8899bb] hover:text-[#00c8ff] transition-colors">Integración WhatsApp API</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-6 text-white text-lg">Contacto</h4>
+            <ul className="space-y-4 text-[#8899bb]">
+              <li className="flex items-center gap-3">
+                <SiWhatsapp className="text-[#00c8ff]" /> +57 310 8131732
+              </li>
+              <li className="flex items-center gap-3">
+                <SiInstagram className="text-[#a855f7]" /> @prixma.ai
+              </li>
+              <li className="mt-6">
+                <a 
+                  href="https://wa.me/573108131732"
+                  target="_blank"
+                  rel="noreferrer"
+                  data-cursor-hover
+                  className="inline-block px-6 py-2 rounded-full border border-white/20 hover:border-[#00c8ff] hover:text-[#00c8ff] transition-all text-sm font-semibold"
+                >
+                  Solicitar Cotización
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
-      </footer>
-    </>
+
+        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#8899bb]">
+          <div>© {new Date().getFullYear()} PRIXMA. Todos los derechos reservados.</div>
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-white transition-colors">Términos de servicio</a>
+            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
+          </div>
+        </div>
+      </div>
+    </footer>
   );
 }
 
 function CardReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
   return (
     <motion.div
       ref={ref}
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-      transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.6, delay, ease: "easeOut" }}
       className="h-full"
     >
       {children}
